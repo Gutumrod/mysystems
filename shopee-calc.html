@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KMO — Shopee Calc</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0c;
+    --surface: #111115;
+    --surface2: #18181e;
+    --border: #2a2a35;
+    --border-bright: #3d3d4f;
+    --gold: #c9a84c;
+    --gold-dim: #8a6d2e;
+    --gold-glow: rgba(201,168,76,0.12);
+    --green: #3ecf8e;
+    --green-dim: #1a6645;
+    --red: #f66;
+    --text: #e8e8f0;
+    --text-dim: #7a7a90;
+    --text-muted: #4a4a60;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'Sarabun', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 16px 80px;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: -200px; left: 50%;
+    transform: translateX(-50%);
+    width: 600px; height: 400px;
+    background: radial-gradient(ellipse, rgba(201,168,76,0.06) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  /* Grid lines background */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(201,168,76,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(201,168,76,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+  }
+
+  .wrapper {
+    width: 100%;
+    max-width: 480px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 32px;
+  }
+
+  .brand {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .brand-tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--gold);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+
+  .brand-title {
+    font-family: var(--mono);
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.5px;
+  }
+
+  .brand-title span { color: var(--gold); }
+
+  .settings-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+    font-size: 16px;
+  }
+  .settings-btn:hover {
+    border-color: var(--gold-dim);
+    color: var(--gold);
+    background: var(--gold-glow);
+  }
+  .settings-btn.active {
+    border-color: var(--gold);
+    color: var(--gold);
+    background: var(--gold-glow);
+  }
+
+  /* Settings Panel */
+  .settings-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 20px;
+    display: none;
+    animation: slideDown 0.2s ease;
+  }
+  .settings-panel.open { display: block; }
+
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .settings-title {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  .settings-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .setting-item label {
+    font-size: 11px;
+    color: var(--text-dim);
+    display: block;
+    margin-bottom: 6px;
+    font-family: var(--mono);
+  }
+
+  .setting-item input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: var(--gold);
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 600;
+    transition: border-color 0.2s;
+    outline: none;
+  }
+  .setting-item input:focus { border-color: var(--gold-dim); }
+
+  /* Input section */
+  .input-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+
+  .input-label {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+    font-family: var(--mono);
+    letter-spacing: 1px;
+  }
+
+  .input-row {
+    display: flex;
+    gap: 10px;
+    align-items: stretch;
+  }
+
+  .price-input-wrap {
+    flex: 1;
+    position: relative;
+  }
+
+  .currency-badge {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  .price-input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 14px 14px 38px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 22px;
+    font-weight: 600;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .price-input::placeholder { color: var(--text-muted); font-size: 18px; }
+  .price-input:focus {
+    border-color: var(--gold-dim);
+    box-shadow: 0 0 0 3px var(--gold-glow);
+  }
+  /* Remove number input arrows */
+  .price-input::-webkit-outer-spin-button,
+  .price-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+  .price-input[type=number] { -moz-appearance: textfield; }
+
+  .calc-btn {
+    background: var(--gold);
+    border: none;
+    border-radius: 12px;
+    padding: 0 20px;
+    color: #1a1200;
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 1px;
+    white-space: nowrap;
+    transition: all 0.2s;
+  }
+  .calc-btn:hover {
+    background: #e0bd60;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px rgba(201,168,76,0.3);
+  }
+  .calc-btn:active { transform: translateY(0); }
+
+  /* Results */
+  .results {
+    display: none;
+    flex-direction: column;
+    gap: 12px;
+    animation: fadeUp 0.3s ease;
+  }
+  .results.show { display: flex; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Zone labels */
+  .zone-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    padding: 0 4px;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .zone-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .zone-public .zone-label { color: var(--green); }
+  .zone-private .zone-label { color: var(--gold); }
+
+  /* Cards */
+  .result-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+  }
+
+  .zone-public .result-card {
+    border-color: var(--green-dim);
+    background: linear-gradient(135deg, var(--surface) 0%, rgba(62,207,142,0.04) 100%);
+  }
+
+  .zone-private .result-card {
+    border-color: var(--gold-dim);
+    background: linear-gradient(135deg, var(--surface) 0%, var(--gold-glow) 100%);
+  }
+
+  /* Main transfer amount */
+  .transfer-main {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+
+  .transfer-label {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-bottom: 4px;
+  }
+
+  .transfer-amount {
+    font-family: var(--mono);
+    font-size: 32px;
+    font-weight: 600;
+    color: var(--green);
+    line-height: 1;
+  }
+
+  .transfer-unit {
+    font-family: var(--mono);
+    font-size: 14px;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+    margin-left: 6px;
+  }
+
+  .transfer-note {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: var(--mono);
+    margin-top: 6px;
+  }
+
+  .copy-btn {
+    background: rgba(62,207,142,0.1);
+    border: 1px solid var(--green-dim);
+    border-radius: 8px;
+    color: var(--green);
+    padding: 8px 14px;
+    font-family: var(--mono);
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    align-self: flex-start;
+    margin-top: 2px;
+  }
+  .copy-btn:hover {
+    background: rgba(62,207,142,0.2);
+    border-color: var(--green);
+  }
+  .copy-btn.copied {
+    background: rgba(62,207,142,0.2);
+    border-color: var(--green);
+    color: var(--green);
+  }
+
+  /* Private metrics */
+  .metrics {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+    margin-top: 4px;
+  }
+
+  .metric {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .metric-label {
+    font-size: 10px;
+    color: var(--text-muted);
+    font-family: var(--mono);
+    letter-spacing: 0.5px;
+  }
+
+  .metric-value {
+    font-family: var(--mono);
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--gold);
+  }
+
+  .metric-value.highlight { color: var(--gold); }
+  .metric-value.neutral { color: var(--text-dim); }
+  .metric-value.negative { color: var(--red); }
+
+  .metric-sub {
+    font-size: 10px;
+    color: var(--text-muted);
+    font-family: var(--mono);
+  }
+
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 14px 0;
+  }
+
+  /* Breakdown bar */
+  .breakdown-bar {
+    height: 4px;
+    border-radius: 2px;
+    background: var(--surface2);
+    overflow: hidden;
+    margin-top: 14px;
+    display: flex;
+    gap: 1px;
+  }
+  .bar-cost { background: var(--border-bright); transition: width 0.5s ease; }
+  .bar-fee  { background: var(--red); opacity: 0.6; transition: width 0.5s ease; }
+  .bar-partner { background: var(--green-dim); transition: width 0.5s ease; }
+  .bar-free { background: var(--gold); transition: width 0.5s ease; }
+
+  .bar-legend {
+    display: flex;
+    gap: 12px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text-muted);
+  }
+  .legend-dot {
+    width: 6px; height: 6px;
+    border-radius: 1px;
+  }
+
+  /* Empty state */
+  .empty-hint {
+    text-align: center;
+    padding: 32px 0 0;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 1px;
+  }
+
+  /* Footer */
+  .footer {
+    margin-top: 40px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-muted);
+    text-align: center;
+    letter-spacing: 1px;
+  }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  <div class="header">
+    <div class="brand">
+      <span class="brand-tag">KMO Rack Bar</span>
+      <span class="brand-title">Shopee<span>.</span>Calc</span>
+    </div>
+    <button class="settings-btn" id="settingsBtn" title="ตั้งค่าอัตราส่วน">⚙</button>
+  </div>
+
+  <!-- Settings Panel -->
+  <div class="settings-panel" id="settingsPanel">
+    <div class="settings-title">// config</div>
+    <div class="settings-grid">
+      <div class="setting-item">
+        <label>ค่า Fee Shopee (%)</label>
+        <input type="number" id="cfgFee" value="14" min="0" max="100" step="0.1">
+      </div>
+      <div class="setting-item">
+        <label>Markup จากต้นทุน (%)</label>
+        <input type="number" id="cfgMarkup" value="30" min="0" max="500" step="1">
+      </div>
+      <div class="setting-item">
+        <label>ต้นทุน/ราคาหน้าร้าน (%)</label>
+        <input type="number" id="cfgCost" value="40" min="0" max="100" step="1">
+      </div>
+      <div class="setting-item">
+        <label>ส่วนแบ่งพี่ฟรี (%)</label>
+        <input type="number" id="cfgFreeShare" value="60" min="0" max="100" step="1">
+      </div>
+    </div>
+  </div>
+
+  <!-- Input -->
+  <div class="input-card">
+    <div class="input-label">// ยอดขาย Shopee</div>
+    <div class="input-row">
+      <div class="price-input-wrap">
+        <span class="currency-badge">฿</span>
+        <input type="number" class="price-input" id="shopeePrice" placeholder="0" min="0">
+      </div>
+      <button class="calc-btn" id="calcBtn">CALC</button>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div class="results" id="results">
+
+    <!-- Zone 1: Public -->
+    <div class="zone-public">
+      <div class="zone-label">zone 01 — พาร์ทเนอร์</div>
+      <div class="result-card">
+        <div class="transfer-main">
+          <div>
+            <div class="transfer-label">ยอดที่ต้องโอนให้ร้าน</div>
+            <div style="display:flex;align-items:flex-end;">
+              <div class="transfer-amount" id="partnerTotal">—</div>
+              <div class="transfer-unit">บาท</div>
+            </div>
+            <div class="transfer-note" id="transferNote">รวมต้นทุน + ส่วนแบ่งกำไรแล้ว</div>
+          </div>
+          <button class="copy-btn" id="copyBtn">📋 copy</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Zone 2: Private -->
+    <div class="zone-private">
+      <div class="zone-label">zone 02 — private</div>
+      <div class="result-card">
+        <div class="metrics">
+          <div class="metric">
+            <div class="metric-label">กำไรพี่ฟรี</div>
+            <div class="metric-value highlight" id="freeProfit">—</div>
+            <div class="metric-sub">บาท</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">ค่า Fee Shopee</div>
+            <div class="metric-value negative" id="feeAmount">—</div>
+            <div class="metric-sub">บาท</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">% กำไรสุทธิ</div>
+            <div class="metric-value neutral" id="profitPct">—</div>
+            <div class="metric-sub">ของยอดขาย</div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="metrics" style="grid-template-columns:1fr 1fr;">
+          <div class="metric">
+            <div class="metric-label">เงินรับจริง (หัก fee)</div>
+            <div class="metric-value" style="font-size:14px;color:var(--text-dim)" id="netReceived">—</div>
+            <div class="metric-sub">บาท</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">ราคาหน้าร้าน</div>
+            <div class="metric-value" style="font-size:14px;color:var(--text-dim)" id="shopPrice">—</div>
+            <div class="metric-sub">บาท</div>
+          </div>
+        </div>
+
+        <!-- Visual breakdown bar -->
+        <div class="breakdown-bar">
+          <div class="bar-cost" id="barCost" style="width:40%"></div>
+          <div class="bar-fee"  id="barFee"  style="width:14%"></div>
+          <div class="bar-partner" id="barPartner" style="width:18%"></div>
+          <div class="bar-free" id="barFree" style="width:28%"></div>
+        </div>
+        <div class="bar-legend">
+          <div class="legend-item"><div class="legend-dot" style="background:var(--border-bright)"></div>ต้นทุน</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--red);opacity:.6"></div>Fee</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--green-dim)"></div>กำไรพาร์ทเนอร์</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--gold)"></div>กำไรฟรี</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="empty-hint" id="hint">// ใส่ยอดขาย แล้วกด CALC</div>
+
+  <div class="footer">KMO RACK BAR CUSTOM · SHOPEE CALCULATOR · 2026</div>
+</div>
+
+<script>
+  const $ = id => document.getElementById(id);
+
+  // Settings toggle
+  $('settingsBtn').addEventListener('click', () => {
+    $('settingsPanel').classList.toggle('open');
+    $('settingsBtn').classList.toggle('active');
+  });
+
+  // Enter key
+  $('shopeePrice').addEventListener('keydown', e => {
+    if (e.key === 'Enter') calculate();
+  });
+
+  $('calcBtn').addEventListener('click', calculate);
+
+  function fmt(n) {
+    return n.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function calculate() {
+    const shopeePrice = parseFloat($('shopeePrice').value);
+    if (!shopeePrice || shopeePrice <= 0) {
+      $('shopeePrice').focus();
+      return;
+    }
+
+    // Rates from settings
+    const feeRate    = parseFloat($('cfgFee').value) / 100;
+    const markupRate = 1 + parseFloat($('cfgMarkup').value) / 100;
+    const costRate   = parseFloat($('cfgCost').value) / 100;
+    const freeShareRate = parseFloat($('cfgFreeShare').value) / 100;
+    const partnerShareRate = 1 - freeShareRate;
+
+    // Calculations
+    const netReceived  = shopeePrice * (1 - feeRate);          // เงินโอนจริงจาก Shopee
+    const feeAmount    = shopeePrice * feeRate;                  // ค่าธรรมเนียม
+    const shopPrice    = shopeePrice / markupRate;               // ราคาหน้าร้าน
+    const baseCost     = shopPrice * costRate;                   // ต้นทุนสินค้า
+    const totalProfit  = netReceived - baseCost;                 // กำไรรวม
+    const freeProfit   = totalProfit * freeShareRate;            // ส่วนพี่ฟรี
+    const partnerGain  = totalProfit * partnerShareRate;         // กำไรพาร์ทเนอร์
+    const partnerTotal = baseCost + partnerGain;                 // โอนให้พาร์ทเนอร์
+    const profitPct    = (freeProfit / shopeePrice * 100);       // % กำไร
+
+    // Update UI
+    $('partnerTotal').textContent = fmt(partnerTotal);
+    $('freeProfit').textContent   = fmt(freeProfit);
+    $('feeAmount').textContent    = fmt(feeAmount);
+    $('profitPct').textContent    = profitPct.toFixed(1) + '%';
+    $('netReceived').textContent  = fmt(netReceived);
+    $('shopPrice').textContent    = fmt(shopPrice);
+
+    // Breakdown bar
+    const total = shopeePrice;
+    $('barCost').style.width    = (baseCost / total * 100).toFixed(1) + '%';
+    $('barFee').style.width     = (feeAmount / total * 100).toFixed(1) + '%';
+    $('barPartner').style.width = (partnerGain / total * 100).toFixed(1) + '%';
+    $('barFree').style.width    = (freeProfit / total * 100).toFixed(1) + '%';
+
+    // Store for copy
+    $('copyBtn').dataset.value = partnerTotal.toFixed(2);
+    $('copyBtn').dataset.shopee = shopeePrice.toFixed(2);
+
+    $('results').classList.add('show');
+    $('hint').style.display = 'none';
+  }
+
+  // Copy button
+  $('copyBtn').addEventListener('click', function() {
+    const today = new Date().toLocaleDateString('th-TH', {
+      day: 'numeric', month: 'short', year: 'numeric'
+    });
+    const text = `สรุปยอดขายวันที่ ${today}: ยอด Shopee ฿${Number(this.dataset.shopee).toLocaleString('th-TH', {minimumFractionDigits:2})} → ร้านรับ ฿${Number(this.dataset.value).toLocaleString('th-TH', {minimumFractionDigits:2})} บาท`;
+
+    navigator.clipboard.writeText(text).then(() => {
+      this.textContent = '✓ copied!';
+      this.classList.add('copied');
+      setTimeout(() => {
+        this.textContent = '📋 copy';
+        this.classList.remove('copied');
+      }, 2000);
+    });
+  });
+</script>
+</body>
+</html>
