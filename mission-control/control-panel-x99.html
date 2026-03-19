@@ -1,0 +1,1872 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>CRAFTBIKELAB — Admin System (Local Mode)</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=IBM+Plex+Sans+Thai:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* Sci-fi Palette */
+  --black: #030508;
+  --navy: #060d1a;
+  --deep: #0a1628;
+  --surface: #0d1f35;
+  --surface2: #102440;
+  --surface3: #162d4d;
+  --border: #1a3a5c;
+  --border2: #1e4570;
+
+  /* Neon accents */
+  --neon: #00d4ff;
+  --neon2: #00a8cc;
+  --neon-glow: rgba(0,212,255,0.15);
+
+  /* Fiery gradient */
+  --fire1: #ff4500;
+  --fire2: #ff6b00;
+  --fire3: #ffaa00;
+  --fire-grad: linear-gradient(135deg, #ff4500, #ff6b00, #ffaa00);
+  --fire-grad-h: linear-gradient(135deg, #ff6500, #ff8c00, #ffc200);
+
+  /* Sci-fi gradient */
+  --scifi-grad: linear-gradient(135deg, #ff4500 0%, #cc1a8a 40%, #0066ff 70%, #00d4ff 100%);
+
+  --text: #e8f4ff;
+  --text2: #7ab3d4;
+  --text3: #3a6080;
+  --green: #00ff88;
+  --red: #ff3366;
+  --yellow: #ffcc00;
+  --purple: #aa55ff;
+
+  --nav-h: 64px;
+  --top-h: 54px;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+body {
+  background: var(--black);
+  color: var(--text);
+  font-family: 'IBM Plex Sans Thai', sans-serif;
+  min-height: 100vh;
+  padding-bottom: var(--nav-h);
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* Sci-fi grid background */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    repeating-linear-gradient(0deg, transparent, transparent 48px, rgba(0,212,255,0.03) 48px, rgba(0,212,255,0.03) 49px),
+    repeating-linear-gradient(90deg, transparent, transparent 48px, rgba(0,212,255,0.03) 48px, rgba(0,212,255,0.03) 49px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Corner scanline effect */
+body::after {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--scifi-grad);
+  z-index: 999;
+  animation: scan-top 4s ease-in-out infinite;
+  opacity: 0.8;
+}
+
+@keyframes scan-top {
+  0%,100% { opacity: 0.4; }
+  50% { opacity: 1; box-shadow: 0 0 20px rgba(255,69,0,0.5), 0 0 40px rgba(0,212,255,0.3); }
+}
+
+/* ── TOPBAR ── */
+.topbar {
+  position: sticky; top: 0; z-index: 100;
+  height: var(--top-h);
+  background: rgba(6,13,26,0.95);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(12px);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 16px;
+}
+
+.logo {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  background: var(--scifi-grad);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 0 8px rgba(0,212,255,0.4));
+}
+
+.logo span { display: block; font-size: 8px; letter-spacing: 4px; color: var(--text3); -webkit-text-fill-color: var(--text3); filter: none; margin-top: 2px; }
+
+.top-stats { display: flex; gap: 16px; }
+.top-stat .v { font-family: 'Orbitron', monospace; font-size: 16px; color: var(--neon); line-height: 1; text-align: right; text-shadow: 0 0 8px var(--neon); }
+.top-stat .l { font-size: 9px; color: var(--text3); letter-spacing: 1px; }
+.local-badge {
+  background: var(--fire-grad);
+  color: #000;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 4px 8px;
+  margin-left: 12px;
+  letter-spacing: 1px;
+  border-radius: 0;
+}
+
+/* ── BOTTOM NAV ── */
+.bnav {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  height: var(--nav-h);
+  background: rgba(6,13,26,0.97);
+  border-top: 1px solid var(--border);
+  display: flex; z-index: 100;
+  backdrop-filter: blur(12px);
+}
+
+.nb {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 4px; cursor: pointer;
+  color: var(--text3); font-size: 10px; letter-spacing: 1px;
+  border: none; background: none; padding: 6px 0;
+  transition: all .2s; position: relative;
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+.nb::after {
+  content: ''; position: absolute; bottom: 0; left: 20%; right: 20%;
+  height: 2px; background: var(--fire-grad);
+  transform: scaleX(0); transition: transform .2s;
+}
+
+.nb .ni { font-size: 20px; line-height: 1; transition: filter .2s; }
+.nb.active { color: var(--neon); }
+.nb.active .ni { filter: drop-shadow(0 0 6px var(--neon)); }
+.nb.active::after { transform: scaleX(1); }
+
+/* ── PAGES ── */
+.page { display: none; padding: 16px; position: relative; z-index: 1; animation: fi .25s ease; }
+.page.active { display: block; }
+@keyframes fi { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+
+/* ── CARDS ── */
+.card {
+  background: rgba(13,31,53,0.8);
+  border: 1px solid var(--border);
+  padding: 16px; margin-bottom: 14px;
+  position: relative; overflow: hidden;
+  backdrop-filter: blur(4px);
+}
+
+.card::before {
+  content: ''; position: absolute;
+  top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--neon), transparent);
+  opacity: 0.4;
+}
+
+.stitle {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 13px; letter-spacing: 3px; font-weight: 700;
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 14px; color: var(--text);
+  text-transform: uppercase;
+}
+
+.stitle::before {
+  content: ''; display: block; width: 3px; height: 18px;
+  background: var(--fire-grad); flex-shrink: 0;
+  box-shadow: 0 0 8px var(--fire2);
+}
+
+/* ── STATS ── */
+.sgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+
+.scard {
+  background: rgba(10,22,40,0.9);
+  border: 1px solid var(--border);
+  padding: 14px; display: flex; align-items: center; gap: 12px;
+  position: relative; overflow: hidden;
+  transition: border-color .2s;
+}
+
+.scard:hover { border-color: var(--neon); }
+.scard::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 1px; background: var(--fire-grad); opacity: 0; transition: opacity .2s; }
+.scard:hover::after { opacity: 1; }
+
+.scard .si { font-size: 24px; }
+.scard .sv { font-family: 'Orbitron', sans-serif; font-size: 28px; line-height: 1; color: var(--neon); text-shadow: 0 0 12px var(--neon); }
+.scard .sl { font-size: 10px; color: var(--text3); margin-top: 3px; letter-spacing: 1px; }
+
+/* ── API STATUS CARDS ── */
+.api-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+
+.api-card {
+  background: rgba(10,22,40,0.9);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--yellow);
+  padding: 12px 14px;
+  transition: all .2s;
+}
+
+.api-card.ready { border-left-color: var(--green); box-shadow: -3px 0 12px rgba(0,255,136,0.2); }
+.api-card .ac-top { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.api-card .ac-name { font-family: 'Orbitron', sans-serif; font-size: 9px; letter-spacing: 2px; color: var(--text3); }
+.api-card .ac-status { font-size: 11px; color: var(--text2); }
+.api-card .ac-status.ok { color: var(--green); text-shadow: 0 0 6px var(--green); }
+
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--yellow); flex-shrink: 0; animation: pd 2s infinite; }
+.dot.ready { background: var(--green); animation: none; box-shadow: 0 0 6px var(--green); }
+@keyframes pd { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.8)} }
+
+/* ── FORM ELEMENTS ── */
+.field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+
+.field label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px; color: var(--neon); letter-spacing: 2px; text-transform: uppercase;
+}
+
+.field input, .field select, .field textarea {
+  background: rgba(6,13,26,0.8);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 12px 14px;
+  font-family: 'IBM Plex Sans Thai', sans-serif;
+  font-size: 14px; outline: none; width: 100%;
+  -webkit-appearance: none; border-radius: 0;
+  transition: border-color .15s, box-shadow .15s;
+}
+
+.field input:focus, .field select:focus, .field textarea:focus {
+  border-color: var(--neon);
+  box-shadow: 0 0 0 1px rgba(0,212,255,0.2), 0 0 12px rgba(0,212,255,0.1);
+}
+
+.field textarea { resize: vertical; min-height: 80px; }
+.frow { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.frow .field { margin-bottom: 0; }
+
+/* ── PLATFORM CHIPS ── */
+.prow { display: flex; gap: 8px; margin-bottom: 14px; }
+.pchip {
+  flex: 1; padding: 10px 6px;
+  border: 1px solid var(--border); color: var(--text3);
+  font-size: 12px; cursor: pointer; text-align: center;
+  transition: all .15s; user-select: none;
+  font-family: 'IBM Plex Mono', monospace; letter-spacing: 1px;
+}
+.pchip.active {
+  border-color: var(--neon); color: var(--neon);
+  background: rgba(0,212,255,0.07);
+  box-shadow: 0 0 12px rgba(0,212,255,0.15);
+}
+
+/* ── BIKE MODEL SEARCH ── */
+.model-search-wrap { position: relative; }
+.model-dropdown {
+  position: absolute; top: 100%; left: 0; right: 0;
+  background: var(--deep);
+  border: 1px solid var(--neon);
+  border-top: none;
+  max-height: 240px; overflow-y: auto;
+  z-index: 200;
+  box-shadow: 0 8px 32px rgba(0,212,255,0.2);
+  display: none;
+}
+.model-dropdown.open { display: block; }
+.model-option {
+  padding: 10px 14px; cursor: pointer;
+  font-size: 13px; color: var(--text2);
+  border-bottom: 1px solid var(--border);
+  transition: all .1s;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.model-option:hover { background: rgba(0,212,255,0.08); color: var(--neon); }
+.model-option .brand-tag {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px; color: var(--text3); letter-spacing: 1px;
+}
+
+.model-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.mtag {
+  background: rgba(0,212,255,0.1);
+  border: 1px solid rgba(0,212,255,0.3);
+  color: var(--neon); padding: 4px 10px;
+  font-size: 11px; display: flex; align-items: center; gap: 6px;
+  font-family: 'IBM Plex Mono', monospace;
+}
+.mtag-x { cursor: pointer; color: var(--text3); font-size: 16px; line-height: 1; }
+.mtag-x:hover { color: var(--red); }
+
+/* ── GEN SECTION ── */
+.gen-section {
+  background: rgba(6,13,26,0.8);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--fire2);
+  padding: 14px; margin-bottom: 12px;
+  box-shadow: -3px 0 16px rgba(255,107,0,0.1);
+}
+
+.gen-section-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 9px; color: var(--fire2); letter-spacing: 3px;
+  margin-bottom: 10px;
+}
+
+.gen-btns { display: flex; gap: 8px; margin-top: 10px; }
+
+.genbtn {
+  flex: 1; height: 44px; padding: 0 10px;
+  border: 1px solid; font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px; letter-spacing: 1px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  gap: 6px; transition: all .15s; white-space: nowrap;
+}
+
+.genbtn.ia { background: rgba(0,212,255,0.06); color: var(--neon); border-color: rgba(0,212,255,0.3); }
+.genbtn.ia:hover { background: rgba(0,212,255,0.15); border-color: var(--neon); box-shadow: 0 0 12px rgba(0,212,255,0.2); }
+.genbtn.at { background: rgba(170,85,255,0.06); color: var(--purple); border-color: rgba(170,85,255,0.3); }
+.genbtn.at:hover { background: rgba(170,85,255,0.15); border-color: var(--purple); box-shadow: 0 0 12px rgba(170,85,255,0.2); }
+.genbtn.running { animation: bk .7s infinite; }
+.genbtn.done { color: var(--green); border-color: var(--green); background: rgba(0,255,136,0.06); }
+@keyframes bk { 50%{opacity:.3} }
+
+.link-result {
+  display: none; align-items: center; gap: 8px;
+  padding: 10px 12px; margin-top: 8px;
+  background: rgba(6,13,26,0.8); border: 1px solid var(--border);
+  animation: fi .2s ease;
+}
+.link-result.show { display: flex; }
+.lr-text { font-family: 'IBM Plex Mono', monospace; font-size: 11px; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lr-text.ia { color: var(--neon); }
+.lr-text.at { color: var(--purple); }
+.lr-src { font-size: 9px; color: var(--text3); white-space: nowrap; letter-spacing: 1px; }
+.use-btn {
+  padding: 4px 10px; font-size: 10px; cursor: pointer;
+  border: none; font-family: 'IBM Plex Mono', monospace;
+  letter-spacing: 1px; white-space: nowrap;
+}
+.use-btn.ia { background: var(--neon); color: var(--black); }
+.use-btn.at { background: var(--purple); color: #fff; }
+
+/* ── BULK GENERATOR ── */
+.bulk-section {
+  background: rgba(6,13,26,0.8);
+  border: 1px solid var(--border);
+  padding: 16px; margin-bottom: 14px;
+  position: relative; overflow: hidden;
+}
+
+.bulk-section::before {
+  content: 'BULK';
+  position: absolute; right: -10px; top: -10px;
+  font-family: 'Orbitron', sans-serif; font-size: 60px;
+  color: rgba(255,107,0,0.04); font-weight: 900;
+  pointer-events: none; letter-spacing: -2px;
+}
+
+.bulk-textarea {
+  background: rgba(3,5,8,0.9) !important;
+  border: 1px solid var(--border) !important;
+  font-family: 'IBM Plex Mono', monospace !important;
+  font-size: 12px !important;
+  min-height: 120px;
+  color: var(--text2) !important;
+  line-height: 1.8;
+}
+
+.bulk-run-btn {
+  width: 100%; padding: 16px;
+  background: var(--fire-grad);
+  color: #000; border: none;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 14px; font-weight: 700; letter-spacing: 3px;
+  cursor: pointer; transition: all .2s; margin-top: 10px;
+  position: relative; overflow: hidden;
+  text-transform: uppercase;
+  box-shadow: 0 4px 20px rgba(255,107,0,0.3);
+}
+
+.bulk-run-btn::before {
+  content: ''; position: absolute;
+  top: -50%; left: -60%; width: 40%; height: 200%;
+  background: rgba(255,255,255,0.2);
+  transform: skewX(-20deg);
+  transition: left .4s;
+}
+
+.bulk-run-btn:hover::before { left: 130%; }
+.bulk-run-btn:hover { box-shadow: 0 4px 30px rgba(255,107,0,0.5); }
+
+.bulk-results { margin-top: 12px; }
+
+.bulk-result-row {
+  display: flex; flex-direction: column; gap: 4px;
+  padding: 10px; margin-bottom: 8px;
+  background: rgba(3,5,8,0.8); border: 1px solid var(--border);
+  border-left: 3px solid var(--border);
+  animation: fi .2s ease backwards;
+  transition: border-left-color .3s;
+}
+
+.bulk-result-row.success { border-left-color: var(--green); }
+.bulk-result-row.error { border-left-color: var(--red); }
+.bulk-result-row.processing { border-left-color: var(--yellow); }
+
+.brr-url { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--text3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.brr-links { display: flex; flex-direction: column; gap: 3px; margin-top: 4px; }
+.brr-link { font-family: 'IBM Plex Mono', monospace; font-size: 11px; display: flex; align-items: center; gap: 6px; }
+.brr-badge { padding: 1px 6px; font-size: 9px; border: 1px solid; letter-spacing: 1px; flex-shrink: 0; }
+.brr-badge.ia { border-color: var(--neon); color: var(--neon); }
+.brr-badge.at { border-color: var(--purple); color: var(--purple); }
+.brr-badge.err { border-color: var(--red); color: var(--red); }
+.brr-val { color: var(--text2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+.brr-val.ok-ia { color: var(--neon); }
+.brr-val.ok-at { color: var(--purple); }
+
+/* ── AFFILIATE LINK FIELDS ── */
+.aff-fields {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 10px; margin-bottom: 12px;
+}
+.aff-field label { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 2px; margin-bottom: 6px; display: block; }
+.aff-field label.ia { color: var(--neon); }
+.aff-field label.at { color: var(--purple); }
+.aff-field input { background: rgba(6,13,26,0.8); border: 1px solid var(--border); color: var(--text); padding: 11px 12px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; outline: none; width: 100%; border-radius: 0; }
+.aff-field input.ia:focus { border-color: var(--neon); box-shadow: 0 0 8px rgba(0,212,255,0.15); }
+.aff-field input.at:focus { border-color: var(--purple); box-shadow: 0 0 8px rgba(170,85,255,0.15); }
+
+/* ── BUTTONS ── */
+.btnp {
+  width: 100%; padding: 15px;
+  background: var(--fire-grad); color: #000; border: none;
+  font-family: 'Orbitron', sans-serif; font-size: 14px; font-weight: 700;
+  letter-spacing: 3px; cursor: pointer; transition: all .2s; margin-top: 4px;
+  box-shadow: 0 4px 16px rgba(255,107,0,0.3);
+  text-transform: uppercase;
+}
+.btnp:active { box-shadow: 0 2px 8px rgba(255,107,0,0.3); }
+.btnp:hover { background: var(--fire-grad-h); box-shadow: 0 4px 24px rgba(255,107,0,0.5); }
+
+.btng {
+  width: 100%; padding: 12px; background: transparent;
+  border: 1px solid var(--border2); color: var(--text2);
+  font-size: 13px; cursor: pointer; margin-bottom: 10px;
+  font-family: 'IBM Plex Sans Thai', sans-serif;
+  transition: border-color .15s;
+}
+.btng:hover { border-color: var(--neon2); color: var(--text); }
+
+/* ── PRODUCT LIST ── */
+.fbar { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+.fbar input, .fbar select {
+  background: rgba(6,13,26,0.8); border: 1px solid var(--border);
+  color: var(--text); padding: 10px 12px; font-size: 13px;
+  outline: none; -webkit-appearance: none; flex: 1; min-width: 120px;
+}
+.fbar input:focus,.fbar select:focus { border-color: var(--neon); }
+
+.pcard {
+  background: rgba(13,31,53,0.8); border: 1px solid var(--border);
+  padding: 14px; margin-bottom: 10px;
+  animation: fi .2s ease backwards;
+  transition: border-color .2s;
+  position: relative; overflow: hidden;
+}
+.pcard:hover { border-color: rgba(0,212,255,0.3); }
+.pcard::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg,transparent,var(--neon),transparent); opacity: 0; transition: opacity .2s; }
+.pcard:hover::before { opacity: 0.3; }
+
+.ptop { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 10px; }
+.pico { width: 44px; height: 44px; background: rgba(6,13,26,0.8); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
+.pinfo { flex: 1; min-width: 0; }
+.pname { font-weight: 600; font-size: 15px; margin-bottom: 2px; color: var(--text); }
+.pbrand { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--text3); letter-spacing: 1px; }
+.pprice { font-family: 'Orbitron', sans-serif; font-size: 18px; flex-shrink: 0; color: var(--text); }
+
+.pmeta { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+.badge { padding: 3px 8px; font-size: 10px; border: 1px solid var(--border); color: var(--text2); display: inline-flex; align-items: center; gap: 3px; font-family: 'IBM Plex Mono', monospace; letter-spacing: 1px; }
+.badge.shopee { border-color: #ff6633; color: #ff6633; }
+.badge.lazada { border-color: #6b74ff; color: #6b74ff; }
+.badge.tiktok { border-color: #ff0050; color: #ff0050; }
+.badge.active { border-color: var(--green); color: var(--green); }
+.badge.draft { border-color: var(--text3); color: var(--text3); }
+
+.plinks { margin-bottom: 10px; display: flex; flex-direction: column; gap: 4px; }
+.plink-row { display: flex; align-items: center; gap: 6px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; }
+.psrc { padding: 2px 6px; font-size: 9px; border: 1px solid; letter-spacing: 1px; flex-shrink: 0; }
+.psrc.ia { border-color: var(--neon); color: var(--neon); }
+.psrc.at { border-color: var(--purple); color: var(--purple); }
+.purl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text2); flex: 1; }
+.purl.none { color: var(--text3); font-style: italic; }
+
+.pacts { display: flex; gap: 8px; }
+.actbtn { flex: 1; padding: 9px; border: 1px solid var(--border); background: rgba(6,13,26,0.6); color: var(--text2); font-size: 12px; cursor: pointer; text-align: center; transition: all .15s; font-family: 'IBM Plex Mono', monospace; }
+.actbtn:hover { border-color: var(--neon); color: var(--neon); }
+.actbtn.del:hover { border-color: var(--red); color: var(--red); }
+
+.empty { text-align: center; padding: 48px 24px; color: var(--text3); }
+.empty .ei { font-size: 36px; margin-bottom: 10px; }
+.empty p { font-size: 14px; line-height: 1.8; }
+
+/* API CONFIG */
+.api-plat-section { background: rgba(10,22,40,0.8); border: 1px solid var(--border); padding: 16px; margin-bottom: 14px; }
+.api-plat-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.api-plat-icon { font-size: 20px; }
+.api-plat-name { font-family: 'Orbitron', sans-serif; font-size: 13px; letter-spacing: 3px; font-weight: 700; }
+.api-plat-name.ia { color: var(--neon); text-shadow: 0 0 8px rgba(0,212,255,0.4); }
+.api-plat-name.at { color: var(--purple); text-shadow: 0 0 8px rgba(170,85,255,0.4); }
+.api-code { background: rgba(3,5,8,0.9); border: 1px solid var(--border); padding: 12px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text2); line-height: 2; overflow-x: auto; margin-top: 10px; }
+
+/* TOAST */
+.toast {
+  position: fixed; bottom: calc(var(--nav-h) + 12px);
+  left: 16px; right: 16px;
+  background: rgba(6,13,26,0.95);
+  border: 1px solid var(--green);
+  color: var(--green); padding: 13px 18px;
+  font-family: 'IBM Plex Mono', monospace; font-size: 12px;
+  z-index: 9999; transform: translateY(20px); opacity: 0;
+  transition: all .25s; text-align: center;
+  box-shadow: 0 0 20px rgba(0,255,136,0.2);
+  backdrop-filter: blur(8px);
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+.toast.err { border-color: var(--red); color: var(--red); box-shadow: 0 0 20px rgba(255,51,102,0.2); }
+
+/* ── PROGRESS ── */
+.progress-bar { height: 2px; background: var(--border); margin-top: 8px; overflow: hidden; }
+.progress-fill { height: 100%; background: var(--fire-grad); width: 0%; transition: width .3s; box-shadow: 0 0 8px rgba(255,107,0,0.4); }
+
+/* ── MATCH TOOL ── */
+.match-card {
+  background: rgba(13,31,53,0.8);
+  border: 1px solid var(--border);
+  padding: 14px; margin-bottom: 10px;
+  animation: fi .2s ease backwards;
+  position: relative;
+}
+.match-card.high { border-left: 3px solid var(--green); box-shadow: -3px 0 12px rgba(0,255,136,0.1); }
+.match-card.mid { border-left: 3px solid var(--yellow); box-shadow: -3px 0 12px rgba(255,204,0,0.1); }
+.match-card.low { border-left: 3px solid var(--red); box-shadow: -3px 0 12px rgba(255,51,102,0.1); }
+.match-card.approved { border-left: 3px solid var(--neon); opacity: 0.7; }
+
+.match-score {
+  position: absolute; top: 12px; right: 12px;
+  font-family: 'Orbitron', sans-serif; font-size: 18px; font-weight: 700;
+}
+.match-score.high { color: var(--green); text-shadow: 0 0 8px rgba(0,255,136,0.5); }
+.match-score.mid { color: var(--yellow); }
+.match-score.low { color: var(--red); }
+
+.match-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+.match-item { background: rgba(6,13,26,0.8); border: 1px solid var(--border); padding: 10px; }
+.match-item-platform { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 2px; margin-bottom: 4px; }
+.match-item-name { font-size: 12px; color: var(--text); line-height: 1.5; margin-bottom: 4px; }
+.match-item-price { font-family: 'Orbitron', sans-serif; font-size: 14px; }
+.match-item-link { font-family: 'IBM Plex Mono', monospace; font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 4px; }
+
+.match-reason { font-size: 11px; color: var(--text2); font-style: italic; margin-bottom: 10px; padding: 6px 10px; background: rgba(0,212,255,0.05); border-left: 2px solid var(--neon); }
+
+.match-actions { display: flex; gap: 8px; }
+.match-btn { flex: 1; padding: 8px; border: 1px solid; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 1px; cursor: pointer; text-align: center; transition: all .15s; background: transparent; }
+.match-btn.approve { border-color: var(--green); color: var(--green); }
+.match-btn.approve:hover { background: rgba(0,255,136,0.1); }
+.match-btn.reject { border-color: var(--red); color: var(--red); }
+.match-btn.reject:hover { background: rgba(255,51,102,0.1); }
+.match-btn.edit { border-color: var(--neon); color: var(--neon); }
+.match-btn.edit:hover { background: rgba(0,212,255,0.1); }
+
+@media(min-width:768px){
+  .match-pair { grid-template-columns: 1fr 1fr 1fr; }
+}
+
+/* DESKTOP */
+@media(min-width:768px){
+  body { display:flex; padding-bottom:0; }
+  .bnav { position:fixed; left:0; top:0; bottom:0; right:auto; width:210px; height:100vh; flex-direction:column; border-top:none; border-right:1px solid var(--border); padding-top:0; }
+  .bnav::before { content:'CRAFTBIKELAB'; font-family:'Orbitron',sans-serif; font-size:11px; font-weight:900; letter-spacing:2px; background:var(--scifi-grad); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; padding:18px 16px 14px; border-bottom:1px solid var(--border); display:block; filter:drop-shadow(0 0 6px rgba(0,212,255,0.4)); }
+  .nb { flex:none; flex-direction:row; justify-content:flex-start; padding:13px 18px; gap:10px; font-size:12px; border-left:2px solid transparent; }
+  .nb::after { display:none; }
+  .nb.active { border-left-color:var(--neon); background:rgba(0,212,255,0.06); color:var(--neon); }
+  .nb .ni { font-size:16px; }
+  .dwrap { margin-left:210px; flex:1; }
+  .topbar { padding:0 24px; }
+  .page { padding:24px; max-width:960px; }
+  .sgrid { grid-template-columns:repeat(4,1fr); }
+  .toast { left:auto; right:20px; bottom:20px; width:340px; }
+}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<!-- SIDEBAR / BOTTOM NAV -->
+<nav class="bnav">
+  <button class="nb active" onclick="go('dashboard',this)"><span class="ni">📊</span><span>DASH</span></button>
+  <button class="nb" onclick="go('add',this)"><span class="ni">➕</span><span>ADD</span></button>
+  <button class="nb" onclick="go('match',this)"><span class="ni">🔀</span><span>MATCH</span></button>
+  <button class="nb" onclick="go('bulk',this)"><span class="ni">⚡</span><span>BULK</span></button>
+  <button class="nb" onclick="go('products',this)"><span class="ni">🗄️</span><span>PARTS</span></button>
+  <button class="nb" onclick="go('api',this)"><span class="ni">🔑</span><span>API</span></button>
+</nav>
+
+<div class="dwrap">
+<div class="topbar">
+  <div class="logo">CRAFTBIKELAB<span>ADMIN SYSTEM v2.0 (LOCAL MODE)</span></div>
+  <div class="top-stats">
+    <div class="top-stat"><div class="v" id="tprod">24</div><div class="l">PARTS</div></div>
+    <div class="top-stat"><div class="v" id="tlink">18</div><div class="l">LINKS</div></div>
+    <div class="local-badge">⚡ STANDALONE</div>
+  </div>
+</div>
+
+<!-- ══ DASHBOARD ══ -->
+<div class="page active" id="page-dashboard">
+  <div class="sgrid">
+    <div class="scard"><div class="si">🔩</div><div><div class="sv" id="s1">24</div><div class="sl">TOTAL PARTS</div></div></div>
+    <div class="scard"><div class="si">🔗</div><div><div class="sv" id="s2">18</div><div class="sl">AFFILIATE LINKS</div></div></div>
+    <div class="scard"><div class="si">⏳</div><div><div class="sv" id="s3">6</div><div class="sl">PENDING</div></div></div>
+    <div class="scard"><div class="si">🏍️</div><div><div class="sv" id="s4">42</div><div class="sl">BIKE MODELS</div></div></div>
+  </div>
+
+  <div class="api-cards">
+    <div class="api-card ready" id="db-ia">
+      <div class="ac-top"><div class="dot ready" id="dot-ia"></div><div class="ac-name">INVOLVE ASIA</div></div>
+      <div class="ac-status ok" id="txt-ia">LOCAL MODE</div>
+    </div>
+    <div class="api-card ready" id="db-at">
+      <div class="ac-top"><div class="dot ready" id="dot-at"></div><div class="ac-name">ACCESSTRADE</div></div>
+      <div class="ac-status ok" id="txt-at">LOCAL MODE</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="stitle">Recent Parts (Sample Data)</div>
+    <div id="recent"></div>
+  </div>
+</div>
+
+<!-- ══ ADD PART ══ -->
+<div class="page" id="page-add">
+  <div class="card">
+    <div class="stitle">Add New Part (Local Storage)</div>
+
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--neon);letter-spacing:2px;margin-bottom:8px;">// PLATFORM</div>
+    <div class="prow">
+      <div class="pchip active" data-p="shopee" onclick="selPlat(this)">🟠 SHOPEE</div>
+      <div class="pchip" data-p="lazada" onclick="selPlat(this)">🟣 LAZADA</div>
+      <div class="pchip" data-p="tiktok" onclick="selPlat(this)">⚫ TIKTOK</div>
+    </div>
+
+    <!-- GEN SECTION -->
+    <div class="gen-section">
+      <div class="gen-section-title">// AFFILIATE LINK GENERATOR (DEMO MODE)</div>
+      <div class="field" style="margin-bottom:10px;">
+        <label>Product URL (Shopee / Lazada / TikTok)</label>
+        <input type="url" id="fUrl" placeholder="วาง URL สินค้าตรงนี้ได้เลยครับ">
+      </div>
+      <div class="gen-btns">
+        <button class="genbtn ia" id="genIA" onclick="genLink('ia')">🔵 GEN — INVOLVE ASIA</button>
+        <button class="genbtn at" id="genAT" onclick="genLink('at')">🟣 GEN — ACCESSTRADE</button>
+      </div>
+      <div id="lrIA" class="link-result"><span style="font-size:12px;">🔵</span><span class="lr-text ia" id="lrIATxt"></span><span class="lr-src">INVOLVE ASIA</span><button class="use-btn ia" onclick="useLink('ia')">USE →</button></div>
+      <div id="lrAT" class="link-result"><span style="font-size:12px;">🟣</span><span class="lr-text at" id="lrATTxt"></span><span class="lr-src">ACCESSTRADE</span><button class="use-btn at" onclick="useLink('at')">USE →</button></div>
+    </div>
+
+    <!-- Affiliate Link Fields -->
+    <div class="aff-fields">
+      <div class="aff-field">
+        <label class="ia">🔵 INVOLVE ASIA LINK</label>
+        <input type="url" id="fAffIA" class="ia" placeholder="https://invl.me/xxxxxxx">
+      </div>
+      <div class="aff-field">
+        <label class="at">🟣 ACCESSTRADE LINK</label>
+        <input type="url" id="fAffAT" class="at" placeholder="https://atth.me/xxxxxxx">
+      </div>
+    </div>
+
+    <!-- Part Info -->
+    <div class="frow">
+      <div class="field"><label>Part Name *</label><input type="text" id="fName" placeholder="เช่น แคชบาร์ SW-Motech EVO"></div>
+      <div class="field"><label>Brand</label><input type="text" id="fBrand" placeholder="เช่น SW-Motech"></div>
+    </div>
+    <div class="frow">
+      <div class="field"><label>Category *</label>
+        <select id="fCat">
+          <option value="">Select...</option>
+          <option value="crashbar">🛡️ แคชบาร์</option>
+          <option value="wheel">🔩 ล้อ / ยาง</option>
+          <option value="exhaust">🔥 ท่อไอเสีย</option>
+          <option value="light">💡 ไฟ LED</option>
+          <option value="handle">🎛️ แฮนด์</option>
+          <option value="bag">🎒 กระเป๋า</option>
+          <option value="screen">🪟 วินด์สกรีน</option>
+          <option value="other">📦 อื่นๆ</option>
+        </select>
+      </div>
+      <div class="field"><label>Price (THB) *</label><input type="number" id="fPrice" placeholder="6800" inputmode="numeric"></div>
+    </div>
+    <div class="field"><label>Status</label>
+      <select id="fStatus"><option value="active">✅ Active</option><option value="draft">📝 Draft</option></select>
+    </div>
+
+    <!-- Compatible Models -->
+    <div class="field">
+      <label>Compatible Bike Models (360 รุ่น)</label>
+      <div class="model-search-wrap">
+        <input type="text" id="modelSearch" placeholder="ค้นหารุ่นรถ เช่น ADV, PCX, Forza..." oninput="searchModels()" onfocus="openDropdown()" autocomplete="off">
+        <div class="model-dropdown" id="modelDropdown"></div>
+      </div>
+      <div class="model-tags" id="modelTags"></div>
+    </div>
+
+    <div class="field"><label>Spec / Description</label><textarea id="fSpec" placeholder="เช่น สแตนเลส 304 / กันสนิม 100% / ติดตั้งง่าย ใส่ได้ ADV350 ปี 2022-2025"></textarea></div>
+
+    <button class="btng" onclick="clearForm()">🗑️ Clear Form</button>
+    <button class="btnp" id="saveBtn" onclick="saveProd()">💾 SAVE TO LOCAL STORAGE</button>
+  </div>
+</div>
+
+<!-- ══ MATCH TOOL ══ -->
+<div class="page" id="page-match">
+  <div class="card">
+    <div class="stitle">Product Match Tool</div>
+
+    <!-- Gemini status -->
+    <div class="api-banner ready" id="match-gem-bar" style="margin-bottom:14px;">
+      <div class="dot ready" id="match-gem-dot"></div>
+      <span id="match-gem-txt" style="font-size:13px;">Gemini API พร้อม (Local Mode) — อัปโหลดไฟล์แล้วกด RUN ได้เลยครับ</span>
+    </div>
+
+    <!-- Step 1: Upload files -->
+    <div class="gen-section" style="margin-bottom:12px;">
+      <div class="gen-section-title">// STEP 1 — UPLOAD FILES (CSV/Excel)</div>
+      <div class="frow">
+        <div class="field" style="margin:0;">
+          <label>🟠 Shopee CSV</label>
+          <input type="file" id="shopeeFile" accept=".csv" onchange="loadShopee(this)" style="background:rgba(255,102,51,0.06);border:1px solid rgba(255,102,51,0.3);color:var(--text);padding:10px;font-size:13px;width:100%;">
+          <div id="shopeeCount" style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--text3);margin-top:4px;">ยังไม่ได้โหลด</div>
+        </div>
+        <div class="field" style="margin:0;">
+          <label>🟣 Lazada Excel</label>
+          <input type="file" id="lazadaFile" accept=".xlsx,.xls" onchange="loadLazada(this)" style="background:rgba(107,116,255,0.06);border:1px solid rgba(107,116,255,0.3);color:var(--text);padding:10px;font-size:13px;width:100%;">
+          <div id="lazadaCount" style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--text3);margin-top:4px;">ยังไม่ได้โหลด</div>
+        </div>
+      </div>
+      <div class="field" style="margin-top:10px;margin-bottom:0;">
+        <label>⚫ TikTok CSV (Optional)</label>
+        <input type="file" id="tiktokFile" accept=".csv,.xlsx" onchange="loadTikTok(this)" style="background:rgba(255,0,80,0.06);border:1px solid rgba(255,0,80,0.3);color:var(--text);padding:10px;font-size:13px;width:100%;">
+        <div id="tiktokCount" style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--text3);margin-top:4px;">ยังไม่ได้โหลด (ไม่บังคับ)</div>
+      </div>
+    </div>
+
+    <!-- Step 2: Match settings -->
+    <div class="gen-section" style="margin-bottom:12px;">
+      <div class="gen-section-title">// STEP 2 — MATCH SETTINGS</div>
+      <div class="frow">
+        <div class="field" style="margin:0;">
+          <label>Batch Size (ครั้งละกี่สินค้า)</label>
+          <select id="matchBatch" style="background:rgba(6,13,26,0.8);border:1px solid var(--border);color:var(--text);padding:12px;font-size:14px;-webkit-appearance:none;outline:none;">
+            <option value="5">5 คู่ต่อครั้ง (ช้า แต่แม่นสุด)</option>
+            <option value="10" selected>10 คู่ต่อครั้ง (แนะนำ)</option>
+            <option value="20">20 คู่ต่อครั้ง (เร็ว)</option>
+          </select>
+        </div>
+        <div class="field" style="margin:0;">
+          <label>Confidence Threshold</label>
+          <select id="matchThreshold" style="background:rgba(6,13,26,0.8);border:1px solid var(--border);color:var(--text);padding:12px;font-size:14px;-webkit-appearance:none;outline:none;">
+            <option value="90">90%+ เขียว (Auto-approve)</option>
+            <option value="70" selected>70%+ เหลือง (ต้องยืนยัน)</option>
+            <option value="50">50%+ ส้ม (ต้องระวัง)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Run button -->
+    <button class="bulk-run-btn" id="matchRunBtn" onclick="runMatch()" style="margin-bottom:14px;">🤖 RUN AI MATCH (GEMINI) — LOCAL MODE</button>
+
+    <!-- Progress -->
+    <div class="progress-bar"><div class="progress-fill" id="matchProgress"></div></div>
+    <div style="display:flex;justify-content:space-between;margin-top:4px;margin-bottom:14px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--text3);" id="matchStatus">READY</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--neon);" id="matchCount"></span>
+    </div>
+
+    <!-- Results -->
+    <div id="matchSummary" style="display:none;margin-bottom:14px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;">
+        <div style="background:rgba(0,255,136,0.08);border:1px solid rgba(0,255,136,0.3);padding:12px;text-align:center;">
+          <div style="font-family:'Orbitron',sans-serif;font-size:24px;color:var(--green);" id="sumGreen">0</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:4px;">✅ HIGH MATCH</div>
+        </div>
+        <div style="background:rgba(255,204,0,0.08);border:1px solid rgba(255,204,0,0.3);padding:12px;text-align:center;">
+          <div style="font-family:'Orbitron',sans-serif;font-size:24px;color:var(--yellow);" id="sumYellow">0</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:4px;">⚠️ REVIEW</div>
+        </div>
+        <div style="background:rgba(255,51,102,0.08);border:1px solid rgba(255,51,102,0.3);padding:12px;text-align:center;">
+          <div style="font-family:'Orbitron',sans-serif;font-size:24px;color:var(--red);" id="sumRed">0</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:4px;">❌ LOW MATCH</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="bulk-run-btn" onclick="approveAll()" style="flex:1;padding:12px;font-size:13px;">✅ APPROVE ALL HIGH MATCH</button>
+        <button onclick="saveMatchedToLocal()" style="flex:1;padding:12px;background:rgba(0,212,255,0.1);border:1px solid var(--neon);color:var(--neon);font-family:'Orbitron',sans-serif;font-size:12px;letter-spacing:2px;cursor:pointer;">💾 SAVE TO LOCAL STORAGE</button>
+      </div>
+    </div>
+
+    <div id="matchResults"></div>
+  </div>
+</div>
+
+<!-- ══ BULK GENERATOR ══ -->
+<div class="page" id="page-bulk">
+  <div class="bulk-section">
+    <div class="stitle">Bulk Affiliate Generator (Local Mode)</div>
+
+    <div class="api-cards" style="margin-bottom:12px;">
+      <div class="api-card ready" id="bulk-ia"><div class="ac-top"><div class="dot ready" id="bdot-ia"></div><div class="ac-name">INVOLVE ASIA</div></div><div class="ac-status ok" id="btxt-ia">LOCAL MODE</div></div>
+      <div class="api-card ready" id="bulk-at"><div class="ac-top"><div class="dot ready" id="bdot-at"></div><div class="ac-name">ACCESSTRADE</div></div><div class="ac-status ok" id="btxt-at">LOCAL MODE</div></div>
+    </div>
+
+    <div class="field">
+      <label>วาง URLs สินค้า (1 URL ต่อบรรทัด — รองรับ Shopee, Lazada, TikTok)</label>
+      <textarea class="bulk-textarea" id="bulkUrls" placeholder="https://shopee.th/product/xxx&#10;https://www.lazada.co.th/products/xxx&#10;https://www.tiktok.com/shop/xxx&#10;...วาง URL ได้ไม่จำกัด"></textarea>
+    </div>
+
+    <div class="frow" style="margin-bottom:10px;">
+      <div class="field" style="margin:0;">
+        <label>Generate via</label>
+        <select id="bulkProvider">
+          <option value="both">🔵🟣 ทั้ง IA + AT</option>
+          <option value="ia">🔵 Involve Asia เท่านั้น</option>
+          <option value="at">🟣 Accesstrade เท่านั้น</option>
+        </select>
+      </div>
+      <div class="field" style="margin:0;">
+        <label>Delay (ms)</label>
+        <input type="number" id="bulkDelay" value="800" min="300" max="3000" inputmode="numeric">
+      </div>
+    </div>
+
+    <div class="progress-bar"><div class="progress-fill" id="bulkProgress"></div></div>
+    <div style="display:flex;justify-content:space-between;margin-top:4px;margin-bottom:2px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--text3);" id="bulkStatus">READY</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--neon);" id="bulkCount">0/0</span>
+    </div>
+
+    <button class="bulk-run-btn" id="bulkRunBtn" onclick="runBulk()">⚡ RUN BULK GENERATOR (DEMO)</button>
+
+    <div class="bulk-results" id="bulkResults"></div>
+  </div>
+</div>
+
+<!-- ══ PARTS DB ══ -->
+<div class="page" id="page-products">
+  <div class="fbar">
+    <input type="search" id="srch" placeholder="🔍 Search parts..." oninput="renderList()">
+    <select id="fCatF" onchange="renderList()">
+      <option value="">All Categories</option>
+      <option value="crashbar">แคชบาร์</option><option value="wheel">ล้อ/ยาง</option>
+      <option value="exhaust">ท่อ</option><option value="light">ไฟ</option>
+      <option value="handle">แฮนด์</option><option value="bag">กระเป๋า</option>
+      <option value="screen">วินด์สกรีน</option><option value="other">อื่นๆ</option>
+    </select>
+    <select id="fPlatF" onchange="renderList()">
+      <option value="">All Platforms</option>
+      <option value="shopee">Shopee</option><option value="lazada">Lazada</option><option value="tiktok">TikTok</option>
+    </select>
+  </div>
+  <div id="plist"></div>
+</div>
+
+<!-- ══ API CONFIG ══ -->
+<div class="page" id="page-api">
+  <div class="api-plat-section" style="border-left:3px solid var(--neon);box-shadow:-3px 0 12px rgba(0,212,255,0.1);">
+    <div class="api-plat-header">
+      <div class="api-plat-icon">🗄️</div>
+      <div class="api-plat-name" style="color:var(--neon);text-shadow:0 0 8px rgba(0,212,255,0.4);">LOCAL STORAGE</div>
+      <div class="dot ready" id="cfg-dot-supa" style="margin-left:auto;"></div>
+      <span id="cfg-txt-supa" style="font-size:11px;color:var(--green);font-family:'IBM Plex Mono',monospace;">ACTIVE</span>
+    </div>
+    <div class="field"><label>Mode</label><input type="text" value="Local Storage (Standalone)" disabled style="opacity:0.8;"></div>
+    <div class="api-code">⚡ ระบบกำลังทำงานใน Local Mode<br>ข้อมูลทั้งหมดจะถูกบันทึกไว้ใน Local Storage ของเบราว์เซอร์</div>
+  </div>
+  
+  <div class="api-plat-section">
+    <div class="api-plat-header">
+      <div class="api-plat-icon">🔵</div>
+      <div class="api-plat-name ia">INVOLVE ASIA</div>
+      <div class="dot ready" id="cfg-dot-ia" style="margin-left:auto;"></div>
+      <span id="cfg-txt-ia" style="font-size:11px;color:var(--green);font-family:'IBM Plex Mono',monospace;">LOCAL MODE</span>
+    </div>
+    <div class="field"><label>API Key (Demo)</label><input type="password" id="cfgIAKey" placeholder="ia_xxxxxxxxxxxxxxxxxxxx" value="local_demo_key"></div>
+    <div class="field" style="margin-bottom:0;"><label>Affiliate ID (Demo)</label><input type="text" id="cfgIAAff" placeholder="your_affiliate_id" value="demo_aff_id"></div>
+    <div class="api-code">⚠️ Local Mode: จะจำลองการสร้างลิงก์แทนการเรียก API จริง<br>🔹 IA → invl.me/demo/{product_id}</div>
+  </div>
+
+  <div class="api-plat-section">
+    <div class="api-plat-header">
+      <div class="api-plat-icon">🟣</div>
+      <div class="api-plat-name at">ACCESSTRADE</div>
+      <div class="dot ready" id="cfg-dot-at" style="margin-left:auto;"></div>
+      <span id="cfg-txt-at" style="font-size:11px;color:var(--green);font-family:'IBM Plex Mono',monospace;">LOCAL MODE</span>
+    </div>
+    <div class="field"><label>API Key / Token (Demo)</label><input type="password" id="cfgATKey" value="local_demo_key"></div>
+    <div class="frow" style="margin-bottom:0;">
+      <div class="field" style="margin:0;"><label>Site ID (Demo)</label><input type="text" id="cfgATSite" value="12345"></div>
+      <div class="field" style="margin:0;"><label>Campaign ID (Demo)</label><input type="text" id="cfgATCamp" value="67890"></div>
+    </div>
+    <div class="api-code">⚠️ Local Mode: จะจำลองการสร้างลิงก์แทนการเรียก API จริง<br>🔹 AT → atth.me/demo/{product_id}</div>
+  </div>
+
+  <div class="api-plat-section">
+    <div class="api-plat-header"><div class="api-plat-icon">⚫</div><div class="api-plat-name" style="color:var(--text2);">TIKTOK SHOP</div></div>
+    <div class="field" style="margin-bottom:0;"><label>Partner Token (Optional)</label><input type="password" id="cfgTK" value="local_demo_token"></div>
+  </div>
+
+  <div class="api-plat-section">
+    <div class="api-plat-header">
+      <div class="api-plat-icon">🤖</div>
+      <div class="api-plat-name" style="color:#4285f4;text-shadow:0 0 8px rgba(66,133,244,0.4);">GEMINI AI</div>
+      <div class="dot ready" id="cfg-dot-gem" style="margin-left:auto;"></div>
+      <span id="cfg-txt-gem" style="font-size:11px;color:var(--green);font-family:'IBM Plex Mono',monospace;">DEMO MODE</span>
+    </div>
+    <div class="field" style="margin-bottom:0;">
+      <label>Gemini API Key (สำหรับ Product Match)</label>
+      <input type="password" id="cfgGemKey" placeholder="AIzaSy..." value="demo_gemini_key">
+    </div>
+    <div class="field" style="margin-top:10px;margin-bottom:0;">
+      <label>Model Version</label>
+      <select id="cfgGemModel" style="background:rgba(6,13,26,0.8);border:1px solid var(--border);color:var(--text);padding:12px;font-size:14px;-webkit-appearance:none;outline:none;">
+        <option value="gemini-2.5-flash" selected>gemini-2.5-flash (แนะนำ — เร็ว+ถูก)</option>
+        <option value="gemini-2.5-pro">gemini-2.5-pro (แม่นกว่า แต่ช้ากว่า)</option>
+        <option value="gemini-2.0-flash">gemini-2.0-flash (รุ่นเก่า)</option>
+      </select>
+    </div>
+    <div class="api-code">⚠️ Local Mode: Gemini จะทำงานในโหมดจำลอง (ใช้ local matching logic แทน)<br><span style="color:#4285f4">→ สำหรับทดสอบ UI เท่านั้น ไม่ต้องใช้ API Key จริง</span></div>
+  </div>
+
+  <button class="btnp" onclick="saveApi()">💾 SAVE LOCAL CONFIG</button>
+</div>
+
+</div><!-- dwrap -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════════════
+// ── LOCAL MODE — NO SUPABASE AUTH ──
+// ══════════════════════════════════════════════════════
+
+// Mock data และ Local Storage management
+let prods = JSON.parse(localStorage.getItem('cbl_local_products') || '[]');
+let apic = JSON.parse(localStorage.getItem('cbl_api') || '{"iaKey":"local_demo_key","iaAff":"demo_aff_id","atKey":"local_demo_key","atSite":"12345","atCamp":"67890","tk":"local_demo_token","gemKey":"demo_gemini_key","gemModel":"gemini-2.5-flash"}');
+
+let selModels=[], plat='shopee', eid=null;
+
+// ข้อมูลตัวอย่างเริ่มต้น
+if (prods.length === 0) {
+  prods = [
+    {
+      id: 'local_1',
+      name: 'แคชบาร์ SW-Motech EVO',
+      brand: 'SW-Motech',
+      cat: 'crashbar',
+      price: 6800,
+      plat: 'shopee',
+      status: 'active',
+      url: 'https://shopee.co.th/product/123456',
+      affIA: 'https://invl.me/demo/swmotech-evo',
+      affAT: 'https://atth.me/demo/swmotech-evo',
+      shopeeLink: 'https://shopee.co.th/product/123456',
+      lazadaLink: '',
+      tiktokLink: '',
+      spec: 'สแตนเลส 304 / กันสนิม 100% / ติดตั้งง่าย ใส่ได้ ADV350 ปี 2022-2025',
+      models: ['ADV350', 'ADV150'],
+      image: '',
+      ts: new Date().toISOString()
+    },
+    {
+      id: 'local_2',
+      name: 'ท่อไอเสีย Yoshimura R77',
+      brand: 'Yoshimura',
+      cat: 'exhaust',
+      price: 12500,
+      plat: 'lazada',
+      status: 'active',
+      url: 'https://www.lazada.co.th/products/789012',
+      affIA: 'https://invl.me/demo/yoshimura-r77',
+      affAT: 'https://atth.me/demo/yoshimura-r77',
+      shopeeLink: '',
+      lazadaLink: 'https://www.lazada.co.th/products/789012',
+      tiktokLink: '',
+      spec: 'คาร์บอน / เสียงทุ้ม / สำหรับ CBR650R',
+      models: ['CBR650R', 'CB650R'],
+      image: '',
+      ts: new Date().toISOString()
+    }
+  ];
+  localStorage.setItem('cbl_local_products', JSON.stringify(prods));
+}
+
+// ── ไม่ต้องมี Auth แล้ว — เข้าใช้งานได้ทันที ──
+async function init(){
+  updateApiUI();
+  updateStats();
+  renderRecent();
+  renderList();
+  loadApi();
+  toast('✓ Local Mode — ระบบพร้อมใช้งาน (ไม่เชื่อมต่อ Supabase)', false);
+}
+
+// Run on page load
+init();
+
+// Column mapping: local → DB (สำหรับความเข้ากันได้กับโค้ดเดิม)
+function localToDB(p){
+  return p; // ใน Local Mode เก็บโครงสร้างเดิมไว้
+}
+
+// Column mapping: DB → local
+function dbToLocal(r){
+  return r; // ใน Local Mode คืนค่าเดิม
+}
+
+// READ all products from localStorage
+function dbLoadProds(){
+  prods = JSON.parse(localStorage.getItem('cbl_local_products') || '[]');
+  updateStats(); renderRecent(); renderList();
+  return prods;
+}
+
+// INSERT product
+function dbInsertProd(p){
+  const newProd = {
+    ...p,
+    id: 'local_' + Date.now() + Math.random().toString(36).substr(2, 5),
+    ts: new Date().toISOString()
+  };
+  prods.unshift(newProd);
+  localStorage.setItem('cbl_local_products', JSON.stringify(prods));
+  return newProd;
+}
+
+// UPDATE product
+function dbUpdateProd(id, p){
+  const idx = prods.findIndex(x => x.id === id);
+  if (idx === -1) return null;
+  prods[idx] = { ...prods[idx], ...p, id: id };
+  localStorage.setItem('cbl_local_products', JSON.stringify(prods));
+  return prods[idx];
+}
+
+// DELETE product
+function dbDeleteProd(id){
+  prods = prods.filter(p => p.id !== id);
+  localStorage.setItem('cbl_local_products', JSON.stringify(prods));
+  return true;
+}
+
+function go(id,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  document.querySelectorAll('.nb').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  if(id==='products')renderList();
+  if(id==='dashboard'){ dbLoadProds(); } // โหลดข้อมูลล่าสุด
+  if(id!=='add'){eid=null;document.getElementById('saveBtn').textContent='💾 SAVE TO LOCAL STORAGE';document.getElementById('saveBtn').onclick=saveProd;}
+}
+
+// ── API UI ──
+function updateApiUI(){
+  // ใน Local Mode แสดงสถานะพร้อมใช้งานทั้งหมด
+  const iaReady = true;
+  const atReady = true;
+  const supaOk = true;
+  const gemReady = true;
+  
+  const pairs=[
+    ['dot-ia','txt-ia','db-ia'],
+    ['dot-at','txt-at','db-at'],
+    ['bdot-ia','btxt-ia','bulk-ia'],
+    ['bdot-at','btxt-at','bulk-at'],
+    ['cfg-dot-ia','cfg-txt-ia',null],
+    ['cfg-dot-at','cfg-txt-at',null]
+  ];
+  
+  pairs.forEach(([d,t,c],i)=>{
+    const ok = true;
+    const dot=document.getElementById(d);if(dot)dot.className='dot ready';
+    const txt=document.getElementById(t);if(txt){txt.textContent='LOCAL MODE';txt.className='ac-status ok';}
+    if(c){const card=document.getElementById(c);if(card)card.className='api-card ready';}
+  });
+  
+  // Supabase
+  const sd=document.getElementById('cfg-dot-supa');if(sd)sd.className='dot ready';
+  const st=document.getElementById('cfg-txt-supa');if(st){st.textContent='LOCAL MODE ✓';st.style.color='var(--green)';}
+  
+  // Gemini
+  const gd=document.getElementById('cfg-dot-gem');if(gd)gd.className='dot ready';
+  const gt=document.getElementById('cfg-txt-gem');if(gt){gt.textContent='DEMO MODE';gt.style.color='var(--green)';}
+  
+  const md=document.getElementById('match-gem-dot');if(md)md.className='dot ready';
+  const mb=document.getElementById('match-gem-bar');if(mb)mb.className='api-banner ready';
+  const mt=document.getElementById('match-gem-txt');if(mt)mt.textContent='Gemini API พร้อม (Local Mode) — อัปโหลดไฟล์แล้วกด RUN ได้เลยครับ';
+}
+
+function updateStats(){
+  const t=prods.length;
+  const l=prods.filter(p=>p.affIA?.startsWith('http')||p.affAT?.startsWith('http')).length;
+  const bk=new Set(prods.flatMap(p=>p.models||[])).size;
+  
+  document.getElementById('s1').textContent = t;
+  document.getElementById('s2').textContent = l;
+  document.getElementById('s3').textContent = t - l;
+  document.getElementById('s4').textContent = bk;
+  
+  document.getElementById('tprod').textContent = t;
+  document.getElementById('tlink').textContent = l;
+}
+
+function renderRecent(){
+  const el=document.getElementById('recent');
+  if(!prods.length){
+    el.innerHTML='<div class="empty"><div class="ei">🔩</div><p>ยังไม่มี Parts<br>กด ADD PART เพื่อเริ่มต้นครับ</p></div>';
+    return;
+  }
+  
+  const CI={crashbar:'🛡️',wheel:'🔩',exhaust:'🔥',light:'💡',handle:'🎛️',bag:'🎒',screen:'🪟',other:'📦'};
+  const PI={shopee:'🟠',lazada:'🟣',tiktok:'⚫'};
+  
+  el.innerHTML=[...prods].reverse().slice(0,5).map(p=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);">
+      <div style="font-size:20px;">${CI[p.cat]||'📦'}</div>
+      <div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:500;color:var(--text);">${p.name}</div><div style="font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;letter-spacing:1px;">${PI[p.plat]||''} ${p.plat} · ฿${Number(p.price).toLocaleString()}</div></div>
+      <div style="display:flex;flex-direction:column;gap:2px;align-items:flex-end;">
+        <span style="font-size:9px;font-family:'IBM Plex Mono',monospace;color:${p.affIA?.startsWith('http')?'var(--neon)':'var(--text3)'};">IA ${p.affIA?.startsWith('http')?'✓':'—'}</span>
+        <span style="font-size:9px;font-family:'IBM Plex Mono',monospace;color:${p.affAT?.startsWith('http')?'var(--purple)':'var(--text3)'};">AT ${p.affAT?.startsWith('http')?'✓':'—'}</span>
+      </div>
+    </div>`).join('');
+}
+
+// ── PLATFORM ──
+function selPlat(el){
+  document.querySelectorAll('.pchip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  plat=el.dataset.p;
+}
+
+// ── BIKE MODEL SEARCH ──
+const BIKE_MODELS = [
+  // Honda
+  {brand:'Honda',model:'ADV350',aliases:['adv350','adv 350','adv']},
+  {brand:'Honda',model:'ADV150',aliases:['adv150','adv 150']},
+  {brand:'Honda',model:'PCX160',aliases:['pcx160','pcx 160','pcx']},
+  {brand:'Honda',model:'PCX150',aliases:['pcx150','pcx 150']},
+  {brand:'Honda',model:'Forza350',aliases:['forza350','forza 350','forza']},
+  {brand:'Honda',model:'Forza300',aliases:['forza300','forza 300']},
+  {brand:'Honda',model:'CB500F',aliases:['cb500f','cb 500f','cb500']},
+  {brand:'Honda',model:'CB500X',aliases:['cb500x','cb 500x']},
+  {brand:'Honda',model:'CB650R',aliases:['cb650r','cb 650r','cb650']},
+  {brand:'Honda',model:'CBR650R',aliases:['cbr650r','cbr 650r']},
+  {brand:'Honda',model:'CBR500R',aliases:['cbr500r','cbr 500r']},
+  {brand:'Honda',model:'CBR300R',aliases:['cbr300r','cbr 300r']},
+  {brand:'Honda',model:'Rebel500',aliases:['rebel500','rebel 500','rebel']},
+  {brand:'Honda',model:'Rebel300',aliases:['rebel300','rebel 300']},
+  {brand:'Honda',model:'CRF300L',aliases:['crf300l','crf 300l','crf300']},
+  {brand:'Honda',model:'CB150R',aliases:['cb150r','cb 150r']},
+  {brand:'Honda',model:'MSX125 Grom',aliases:['msx125','msx 125','grom','msx']},
+  {brand:'Honda',model:'Monkey125',aliases:['monkey125','monkey 125','monkey']},
+  {brand:'Honda',model:'Dax125',aliases:['dax125','dax 125','dax']},
+  {brand:'Honda',model:'CT125 Hunter Cub',aliases:['ct125','ct 125','hunter cub']},
+  {brand:'Honda',model:'CB350',aliases:['cb350','cb 350']},
+  {brand:'Honda',model:'CB1000R',aliases:['cb1000r','cb 1000r']},
+  {brand:'Honda',model:'Goldwing',aliases:['goldwing','gold wing']},
+  {brand:'Honda',model:'X-ADV750',aliases:['x-adv750','xadv750','x adv','xadv']},
+  {brand:'Honda',model:'Click125i',aliases:['click125','click 125i','click']},
+  {brand:'Honda',model:'Click160',aliases:['click160','click 160']},
+  {brand:'Honda',model:'Wave110i',aliases:['wave110','wave 110','wave']},
+  {brand:'Honda',model:'Scoopy-i',aliases:['scoopy','scoopy-i']},
+  // Yamaha
+  {brand:'Yamaha',model:'MT-03',aliases:['mt03','mt-03','mt 03']},
+  {brand:'Yamaha',model:'MT-07',aliases:['mt07','mt-07','mt 07']},
+  {brand:'Yamaha',model:'MT-09',aliases:['mt09','mt-09','mt 09']},
+  {brand:'Yamaha',model:'MT-10',aliases:['mt10','mt-10','mt 10']},
+  {brand:'Yamaha',model:'MT-15',aliases:['mt15','mt-15','mt 15']},
+  {brand:'Yamaha',model:'R3',aliases:['r3','yzf-r3','yzfr3']},
+  {brand:'Yamaha',model:'R7',aliases:['r7','yzf-r7','yzfr7']},
+  {brand:'Yamaha',model:'R15',aliases:['r15','yzf-r15','yzfr15']},
+  {brand:'Yamaha',model:'R1',aliases:['r1','yzf-r1','yzfr1']},
+  {brand:'Yamaha',model:'XMAX300',aliases:['xmax300','xmax 300','xmax']},
+  {brand:'Yamaha',model:'TMAX560',aliases:['tmax560','tmax 560','tmax']},
+  {brand:'Yamaha',model:'NMAX155',aliases:['nmax155','nmax 155','nmax']},
+  {brand:'Yamaha',model:'Aerox155',aliases:['aerox155','aerox 155','aerox']},
+  {brand:'Yamaha',model:'Grand Filano',aliases:['filano','grand filano']},
+  {brand:'Yamaha',model:'Fino125',aliases:['fino125','fino 125','fino']},
+  {brand:'Yamaha',model:'Exciter 150',aliases:['exciter150','exciter 150','exciter']},
+  {brand:'Yamaha',model:'Tracer 900',aliases:['tracer900','tracer 900','tracer9']},
+  {brand:'Yamaha',model:'Tracer 700',aliases:['tracer700','tracer 700','tracer7']},
+  {brand:'Yamaha',model:'Ténéré 700',aliases:['tenere700','tenere 700','t7']},
+  {brand:'Yamaha',model:'XSR900',aliases:['xsr900','xsr 900','xsr']},
+  {brand:'Yamaha',model:'XSR700',aliases:['xsr700','xsr 700']},
+  {brand:'Yamaha',model:'XSR155',aliases:['xsr155','xsr 155']},
+  // Kawasaki
+  {brand:'Kawasaki',model:'Z900',aliases:['z900','z 900']},
+  {brand:'Kawasaki',model:'Z650',aliases:['z650','z 650']},
+  {brand:'Kawasaki',model:'Z400',aliases:['z400','z 400']},
+  {brand:'Kawasaki',model:'Z300',aliases:['z300','z 300']},
+  {brand:'Kawasaki',model:'Z125',aliases:['z125','z 125']},
+  {brand:'Kawasaki',model:'Ninja 650',aliases:['ninja650','ninja 650']},
+  {brand:'Kawasaki',model:'Ninja 400',aliases:['ninja400','ninja 400']},
+  {brand:'Kawasaki',model:'Ninja 300',aliases:['ninja300','ninja 300']},
+  {brand:'Kawasaki',model:'Ninja ZX-6R',aliases:['zx6r','zx-6r','636']},
+  {brand:'Kawasaki',model:'Ninja ZX-10R',aliases:['zx10r','zx-10r']},
+  {brand:'Kawasaki',model:'Versys 650',aliases:['versys650','versys 650','versys']},
+  {brand:'Kawasaki',model:'Versys-X 300',aliases:['versys300','versys x','versysx']},
+  {brand:'Kawasaki',model:'W800',aliases:['w800','w 800']},
+  {brand:'Kawasaki',model:'Vulcan S',aliases:['vulcan s','vulcan']},
+  {brand:'Kawasaki',model:'KLX230',aliases:['klx230','klx 230','klx']},
+  {brand:'Kawasaki',model:'KLX150',aliases:['klx150','klx 150']},
+  // Suzuki
+  {brand:'Suzuki',model:'GSX-R150',aliases:['gsxr150','gsx-r150','gsx r150']},
+  {brand:'Suzuki',model:'GSX-S150',aliases:['gsxs150','gsx-s150']},
+  {brand:'Suzuki',model:'GSX-R1000',aliases:['gsxr1000','gsx-r1000']},
+  {brand:'Suzuki',model:'GSX-S750',aliases:['gsxs750','gsx-s750','s750']},
+  {brand:'Suzuki',model:'GSX-S1000',aliases:['gsxs1000','gsx-s1000']},
+  {brand:'Suzuki',model:'V-Strom 650',aliases:['vstrom650','v-strom650','vstrom']},
+  {brand:'Suzuki',model:'V-Strom 1050',aliases:['vstrom1050','v-strom1050']},
+  {brand:'Suzuki',model:'Burgman 400',aliases:['burgman400','burgman 400','burgman']},
+  {brand:'Suzuki',model:'Address 110',aliases:['address110','address 110','address']},
+  // Royal Enfield
+  {brand:'Royal Enfield',model:'Meteor 350',aliases:['meteor350','meteor 350','meteor']},
+  {brand:'Royal Enfield',model:'Classic 350',aliases:['classic350','classic 350','classic']},
+  {brand:'Royal Enfield',model:'Himalayan',aliases:['himalayan']},
+  {brand:'Royal Enfield',model:'Interceptor 650',aliases:['interceptor650','interceptor 650','interceptor']},
+  {brand:'Royal Enfield',model:'Continental GT 650',aliases:['gt650','continental gt','gt 650']},
+  {brand:'Royal Enfield',model:'Super Meteor 650',aliases:['super meteor','superMeteor650']},
+  // Triumph
+  {brand:'Triumph',model:'Street Triple',aliases:['street triple','street triple r','streettriple']},
+  {brand:'Triumph',model:'Tiger 900',aliases:['tiger900','tiger 900','tiger']},
+  {brand:'Triumph',model:'Bonneville T120',aliases:['bonneville','t120','bonneville t120']},
+  {brand:'Triumph',model:'Scrambler 1200',aliases:['scrambler1200','scrambler 1200']},
+  {brand:'Triumph',model:'Speed Twin',aliases:['speed twin','speedtwin']},
+  {brand:'Triumph',model:'Trident 660',aliases:['trident660','trident 660','trident']},
+  // BMW
+  {brand:'BMW',model:'R1250GS',aliases:['r1250gs','r 1250gs','gs1250','gs']},
+  {brand:'BMW',model:'F850GS',aliases:['f850gs','f 850gs']},
+  {brand:'BMW',model:'F750GS',aliases:['f750gs','f 750gs']},
+  {brand:'BMW',model:'S1000RR',aliases:['s1000rr','s 1000rr']},
+  {brand:'BMW',model:'G310R',aliases:['g310r','g 310r','g310']},
+  {brand:'BMW',model:'G310GS',aliases:['g310gs','g 310gs']},
+  {brand:'BMW',model:'C400X',aliases:['c400x','c 400x']},
+  // Ducati
+  {brand:'Ducati',model:'Monster',aliases:['monster','ducati monster']},
+  {brand:'Ducati',model:'Scrambler',aliases:['scrambler','ducati scrambler']},
+  {brand:'Ducati',model:'Panigale V4',aliases:['panigale v4','paniGale','v4']},
+  {brand:'Ducati',model:'Multistrada V4',aliases:['multistrada','multistrada v4']},
+  // KTM
+  {brand:'KTM',model:'Duke 390',aliases:['duke390','duke 390','390duke']},
+  {brand:'KTM',model:'Duke 200',aliases:['duke200','duke 200','200duke']},
+  {brand:'KTM',model:'RC 390',aliases:['rc390','rc 390']},
+  {brand:'KTM',model:'Adventure 390',aliases:['adventure390','390 adventure']},
+  {brand:'KTM',model:'1290 Super Duke',aliases:['1290 super duke','super duke 1290']},
+  // CF Moto
+  {brand:'CF Moto',model:'300NK',aliases:['300nk','cf moto 300','cfmoto300']},
+  {brand:'CF Moto',model:'400NK',aliases:['400nk','cf moto 400','cfmoto400']},
+  {brand:'CF Moto',model:'650NK',aliases:['650nk','cf moto 650','cfmoto650']},
+  {brand:'CF Moto',model:'650MT',aliases:['650mt','cf moto 650mt']},
+  {brand:'CF Moto',model:'800MT',aliases:['800mt','cf moto 800mt']},
+  // Benelli
+  {brand:'Benelli',model:'TNT300',aliases:['tnt300','tnt 300']},
+  {brand:'Benelli',model:'TNT600i',aliases:['tnt600','tnt 600']},
+  {brand:'Benelli',model:'TRK502',aliases:['trk502','trk 502']},
+  {brand:'Benelli',model:'Leoncino 500',aliases:['leoncino500','leoncino 500','leoncino']},
+  {brand:'Benelli',model:'502C',aliases:['502c','benelli 502']},
+];
+
+function searchModels(){
+  const q=document.getElementById('modelSearch').value.toLowerCase().trim();
+  const dd=document.getElementById('modelDropdown');
+  if(!q){dd.classList.remove('open');return;}
+  const matches=BIKE_MODELS.filter(m=>
+    !selModels.includes(m.model)&&(
+      m.model.toLowerCase().includes(q)||
+      m.brand.toLowerCase().includes(q)||
+      m.aliases.some(a=>a.includes(q))
+    )
+  ).slice(0,12);
+  if(!matches.length){dd.classList.remove('open');return;}
+  dd.innerHTML=matches.map(m=>`
+    <div class="model-option" onclick="selectModel('${m.model}','${m.brand}')">
+      <span>${m.model}</span>
+      <span class="brand-tag">${m.brand.toUpperCase()}</span>
+    </div>`).join('');
+  dd.classList.add('open');
+}
+
+function openDropdown(){
+  const q=document.getElementById('modelSearch').value;
+  if(q.length>0)searchModels();
+}
+
+function selectModel(model,brand){
+  if(!selModels.includes(model))selModels.push(model);
+  document.getElementById('modelSearch').value='';
+  document.getElementById('modelDropdown').classList.remove('open');
+  renderModelTags();
+}
+
+function removeModel(m){
+  selModels=selModels.filter(x=>x!==m);
+  renderModelTags();
+}
+
+function renderModelTags(){
+  document.getElementById('modelTags').innerHTML=selModels.map(m=>`
+    <div class="mtag">${m}<span class="mtag-x" onclick="removeModel('${m}')">×</span></div>`).join('');
+}
+
+// Close dropdown on outside click
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.model-search-wrap'))
+    document.getElementById('modelDropdown')?.classList.remove('open');
+});
+
+// ── GEN SINGLE LINK (Local Mode) ──
+async function genLink(prov){
+  const url=document.getElementById('fUrl').value.trim();
+  if(!url){toast('กรุณากรอก URL สินค้าก่อนครับ',true);return;}
+  const btnId=prov==='ia'?'genIA':'genAT';
+  const resultId=prov==='ia'?'lrIA':'lrAT';
+  const txtId=prov==='ia'?'lrIATxt':'lrATTxt';
+  const btn=document.getElementById(btnId);
+  const origClass=btn.className;
+  
+  btn.className=origClass+' running';
+  btn.textContent='⏳ GENERATING...';
+  
+  await sleep(900);
+  
+  // สร้างลิงก์จำลอง
+  const productId = 'demo_' + Math.random().toString(36).substr(2, 8);
+  const link = prov === 'ia' 
+    ? `https://invl.me/demo/${productId}` 
+    : `https://atth.me/demo/${productId}`;
+  
+  document.getElementById(txtId).textContent = link;
+  document.getElementById(resultId).classList.add('show');
+  btn.className = origClass + ' done';
+  btn.textContent = '✓ DONE (DEMO)';
+  toast(`✓ DEMO: Generated via ${prov==='ia'?'Involve Asia':'Accesstrade'}`);
+  
+  setTimeout(()=>{
+    btn.className=origClass;
+    btn.textContent=prov==='ia'?'🔵 GEN — INVOLVE ASIA':'🟣 GEN — ACCESSTRADE';
+  },2500);
+}
+
+function useLink(prov){
+  const link=document.getElementById(prov==='ia'?'lrIATxt':'lrATTxt').textContent;
+  document.getElementById(prov==='ia'?'fAffIA':'fAffAT').value=link;
+  toast(`✓ Applied ${prov==='ia'?'IA':'AT'} link (Demo)`);
+}
+
+// ── BULK GENERATOR (Local Mode) ──
+let bulkRunning=false;
+
+async function runBulk(){
+  if(bulkRunning)return;
+  const raw=document.getElementById('bulkUrls').value.trim();
+  const urls=raw.split('\n').map(u=>u.trim()).filter(u=>u.startsWith('http'));
+  if(!urls.length){toast('กรุณาวาง URL อย่างน้อย 1 รายการครับ',true);return;}
+
+  const prov=document.getElementById('bulkProvider').value;
+  const delay=parseInt(document.getElementById('bulkDelay').value)||800;
+
+  bulkRunning=true;
+  const btn=document.getElementById('bulkRunBtn');
+  btn.textContent='⏳ RUNNING...';btn.disabled=true;
+
+  const resultsEl=document.getElementById('bulkResults');
+  resultsEl.innerHTML='';
+
+  for(let i=0;i<urls.length;i++){
+    const url=urls[i];
+    const pct=Math.round((i/urls.length)*100);
+    document.getElementById('bulkProgress').style.width=pct+'%';
+    document.getElementById('bulkStatus').textContent=`PROCESSING ${i+1}/${urls.length}`;
+    document.getElementById('bulkCount').textContent=`${i+1}/${urls.length}`;
+
+    const rowId='br_'+i;
+    const row=document.createElement('div');
+    row.className='bulk-result-row processing';
+    row.id=rowId;
+    row.style.animationDelay=(i*30)+'ms';
+    row.innerHTML=`<div class="brr-url">${url}</div><div class="brr-links" id="brl_${i}"><div style="font-size:11px;color:var(--yellow);font-family:'IBM Plex Mono',monospace;">⏳ Generating...</div></div>`;
+    resultsEl.prepend(row);
+
+    await sleep(delay);
+    
+    const productId = 'demo_' + Math.random().toString(36).substr(2, 6);
+    const iaLink = prov !== 'at' ? `https://invl.me/demo/${productId}` : '';
+    const atLink = prov !== 'ia' ? `https://atth.me/demo/${productId}` : '';
+
+    row.className='bulk-result-row success';
+    document.getElementById('brl_'+i).innerHTML = [
+      prov!=='at' ? `<div class="brr-link"><span class="brr-badge ia">IA</span><span class="brr-val ok-ia">${iaLink}</span><button onclick="navigator.clipboard.writeText('${iaLink}');toast('Copied IA link ✓')" style="padding:2px 8px;background:rgba(0,212,255,0.1);border:1px solid var(--neon);color:var(--neon);font-size:9px;cursor:pointer;font-family:'IBM Plex Mono',monospace;">COPY</button></div>` : '',
+      prov!=='ia' ? `<div class="brr-link"><span class="brr-badge at">AT</span><span class="brr-val ok-at">${atLink}</span><button onclick="navigator.clipboard.writeText('${atLink}');toast('Copied AT link ✓')" style="padding:2px 8px;background:rgba(170,85,255,0.1);border:1px solid var(--purple);color:var(--purple);font-size:9px;cursor:pointer;font-family:'IBM Plex Mono',monospace;">COPY</button></div>` : '',
+    ].filter(Boolean).join('');
+  }
+
+  document.getElementById('bulkProgress').style.width='100%';
+  document.getElementById('bulkStatus').textContent='COMPLETE ✓';
+  document.getElementById('bulkCount').textContent=`${urls.length}/${urls.length}`;
+  btn.textContent='⚡ RUN BULK GENERATOR (DEMO)';
+  btn.disabled=false;
+  bulkRunning=false;
+  toast(`✓ Bulk complete! ${urls.length} URLs processed (Demo Mode)`);
+}
+
+// ── SAVE PRODUCT ──
+async function saveProd(){
+  const name=document.getElementById('fName').value.trim(),price=document.getElementById('fPrice').value.trim(),cat=document.getElementById('fCat').value;
+  if(!name||!price||!cat){toast('กรุณากรอก Name, Price และ Category ครับ',true);return;}
+
+  const btn=document.getElementById('saveBtn');
+  btn.textContent='⏳ SAVING...'; btn.disabled=true;
+
+  const p={
+    name,
+    brand:document.getElementById('fBrand').value.trim(),
+    cat,
+    price:Number(price),
+    plat,
+    status:document.getElementById('fStatus').value,
+    url:document.getElementById('fUrl').value.trim(),
+    affIA:document.getElementById('fAffIA').value.trim(),
+    affAT:document.getElementById('fAffAT').value.trim(),
+    spec:document.getElementById('fSpec').value.trim(),
+    models:[...selModels],
+    ts:new Date().toISOString()
+  };
+
+  let saved;
+  if(eid){
+    saved = dbUpdateProd(eid, p);
+  } else {
+    saved = dbInsertProd(p);
+  }
+
+  btn.textContent = eid ? '💾 UPDATE PART' : '💾 SAVE TO LOCAL STORAGE';
+  btn.disabled = false;
+  
+  if(!saved) return;
+
+  updateStats(); renderRecent(); clearForm();
+  toast(eid ? '✓ Updated successfully' : `✓ Saved "${name}" to Local Storage`);
+  eid = null;
+  setTimeout(()=>go('products',document.querySelectorAll('.nb')[4]),600);
+}
+
+function clearForm(){
+  ['fUrl','fAffIA','fAffAT','fName','fBrand','fPrice','fSpec'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('fCat').value='';document.getElementById('fStatus').value='active';
+  ['lrIA','lrAT'].forEach(id=>document.getElementById(id).classList.remove('show'));
+  document.getElementById('modelSearch').value='';
+  selModels=[];renderModelTags();
+  document.querySelectorAll('.pchip').forEach((c,i)=>c.classList.toggle('active',i===0));
+  plat='shopee';eid=null;
+  document.getElementById('saveBtn').textContent='💾 SAVE TO LOCAL STORAGE';
+  document.getElementById('saveBtn').onclick=saveProd;
+}
+
+// ── PARTS LIST ──
+const CAT={crashbar:'แคชบาร์',wheel:'ล้อ/ยาง',exhaust:'ท่อ',light:'ไฟ LED',handle:'แฮนด์',bag:'กระเป๋า',screen:'วินด์สกรีน',other:'อื่นๆ'};
+const PI={shopee:'🟠',lazada:'🟣',tiktok:'⚫'};
+const CI={crashbar:'🛡️',wheel:'🔩',exhaust:'🔥',light:'💡',handle:'🎛️',bag:'🎒',screen:'🪟',other:'📦'};
+
+function renderList(){
+  const s=(document.getElementById('srch')?.value||'').toLowerCase(),
+        fc=document.getElementById('fCatF')?.value||'',
+        fp=document.getElementById('fPlatF')?.value||'';
+  
+  const f=[...prods].reverse().filter(p=>
+    (!s || p.name.toLowerCase().includes(s) || (p.brand||'').toLowerCase().includes(s)) &&
+    (!fc || p.cat===fc) &&
+    (!fp || p.plat===fp)
+  );
+  
+  const el=document.getElementById('plist');
+  if(!f.length){
+    el.innerHTML=`<div class="empty"><div class="ei">🔩</div><p>${prods.length?'ไม่พบที่ค้นหา':'ยังไม่มี Parts<br>กด ADD PART ครับ'}</p></div>`;
+    return;
+  }
+  
+  el.innerHTML=f.map((p,i)=>`
+    <div class="pcard" style="animation-delay:${i*30}ms">
+      <div class="ptop">
+        <div class="pico">${CI[p.cat]||'📦'}</div>
+        <div class="pinfo"><div class="pname">${p.name}</div><div class="pbrand">${p.brand||'—'}</div></div>
+        <div class="pprice">฿${Number(p.price).toLocaleString()}</div>
+      </div>
+      <div class="pmeta">
+        <span class="badge ${p.plat}">${PI[p.plat]||''} ${p.plat}</span>
+        <span class="badge">${CAT[p.cat]||p.cat}</span>
+        <span class="badge ${p.status}">${p.status}</span>
+        ${p.models?.length?`<span class="badge">🏍️ ${p.models.slice(0,2).join(', ')}${p.models.length>2?` +${p.models.length-2}`:''}</span>`:''}
+      </div>
+      <div class="plinks">
+        <div class="plink-row"><span class="psrc ia">IA</span><span class="purl ${p.affIA?.startsWith('http')?'':'none'}">${p.affIA?.startsWith('http')?p.affIA:'ยังไม่มี link'}</span></div>
+        <div class="plink-row"><span class="psrc at">AT</span><span class="purl ${p.affAT?.startsWith('http')?'':'none'}">${p.affAT?.startsWith('http')?p.affAT:'ยังไม่มี link'}</span></div>
+      </div>
+      <div class="pacts">
+        <div class="actbtn" onclick="editProd('${p.id}')">✏️ EDIT</div>
+        <div class="actbtn del" onclick="delProd('${p.id}')">🗑️ DELETE</div>
+      </div>
+    </div>`).join('');
+}
+
+function editProd(id){
+  const p=prods.find(x=>x.id===id);if(!p)return;eid=id;
+  go('add',document.querySelectorAll('.nb')[1]);
+  setTimeout(()=>{
+    document.getElementById('fUrl').value=p.url||'';
+    document.getElementById('fAffIA').value=p.affIA||'';
+    document.getElementById('fAffAT').value=p.affAT||'';
+    document.getElementById('fName').value=p.name;
+    document.getElementById('fBrand').value=p.brand||'';
+    document.getElementById('fCat').value=p.cat;
+    document.getElementById('fPrice').value=p.price;
+    document.getElementById('fStatus').value=p.status;
+    document.getElementById('fSpec').value=p.spec||'';
+    selModels=[...(p.models||[])];renderModelTags();
+    document.querySelectorAll('.pchip').forEach(c=>c.classList.toggle('active',c.dataset.p===p.plat));
+    plat=p.plat;
+    document.getElementById('saveBtn').textContent='💾 UPDATE PART';
+    document.getElementById('saveBtn').onclick=saveProd;
+    window.scrollTo(0,0);
+  },50);
+}
+
+async function delProd(id){
+  if(!confirm('Delete this part?'))return;
+  dbDeleteProd(id);
+  prods = prods.filter(p => p.id !== id);
+  updateStats();renderRecent();renderList();toast('Part deleted');
+}
+
+// ── API CONFIG ──
+function loadApi(){
+  document.getElementById('cfgIAKey').value=apic.iaKey||'local_demo_key';
+  document.getElementById('cfgIAAff').value=apic.iaAff||'demo_aff_id';
+  document.getElementById('cfgATKey').value=apic.atKey||'local_demo_key';
+  document.getElementById('cfgATSite').value=apic.atSite||'12345';
+  document.getElementById('cfgATCamp').value=apic.atCamp||'67890';
+  document.getElementById('cfgTK').value=apic.tk||'local_demo_token';
+  document.getElementById('cfgGemKey').value=apic.gemKey||'demo_gemini_key';
+  document.getElementById('cfgGemModel').value=apic.gemModel||'gemini-2.5-flash';
+}
+
+function saveApi(){
+  apic={
+    iaKey:document.getElementById('cfgIAKey').value.trim() || 'local_demo_key',
+    iaAff:document.getElementById('cfgIAAff').value.trim() || 'demo_aff_id',
+    atKey:document.getElementById('cfgATKey').value.trim() || 'local_demo_key',
+    atSite:document.getElementById('cfgATSite').value.trim() || '12345',
+    atCamp:document.getElementById('cfgATCamp').value.trim() || '67890',
+    tk:document.getElementById('cfgTK').value.trim() || 'local_demo_token',
+    gemKey:document.getElementById('cfgGemKey').value.trim() || 'demo_gemini_key',
+    gemModel:document.getElementById('cfgGemModel').value
+  };
+  localStorage.setItem('cbl_api',JSON.stringify(apic));
+  updateApiUI();
+  toast('✓ Local config saved');
+}
+
+// ── MATCH TOOL ──
+let shopeeData=[], lazadaData=[], tiktokData=[], matchResults=[];
+
+// ── LOAD SHOPEE CSV ──
+function loadShopee(input){
+  const file=input.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const lines=e.target.result.split('\n').filter(l=>l.trim());
+    const headers=parseCSVRow(lines[0]);
+    shopeeData=lines.slice(1).map(line=>{
+      const vals=parseCSVRow(line);
+      const obj={};
+      headers.forEach((h,i)=>obj[h.trim()]=vals[i]?.trim()||'');
+      return {
+        name: obj['ชื่อสินค้า']||obj['product_name']||obj['name']||'',
+        price: obj['ราคา']||obj['price']||'',
+        link: obj['ลิงก์ข้อเสนอ']||obj['affiliate_link']||obj['link']||'',
+        shop: obj['ชื่อร้านค้า']||obj['shop']||'',
+        platform:'shopee'
+      };
+    }).filter(p=>p.name&&p.link);
+    document.getElementById('shopeeCount').textContent=`✅ โหลดแล้ว ${shopeeData.length} รายการ (Demo)`;
+    document.getElementById('shopeeCount').style.color='var(--green)';
+    toast(`✓ Shopee: ${shopeeData.length} รายการ (Local Mode)`);
+  };
+  reader.readAsText(file,'UTF-8');
+}
+
+// ── LOAD LAZADA EXCEL ──
+function loadLazada(input){
+  const file=input.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    // Use SheetJS from CDN
+    const XLSX=window.XLSX;
+    if(!XLSX){toast('กำลังโหลด SheetJS...',true);return;}
+    const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
+    const ws=wb.Sheets[wb.SheetNames[0]];
+    const rows=XLSX.utils.sheet_to_json(ws,{defval:''});
+    lazadaData=rows.map(r=>({
+      name: r['product_name']||r['ชื่อสินค้า']||r['name']||'',
+      price: r['sale_price']||r['discounted_price']||r['price']||'',
+      link: r['promo_short_link']||r['promo_link']||r['affiliate_link']||'',
+      brand: r['brand']||'',
+      image: r['picture_url']||r['image']||'',
+      platform:'lazada'
+    })).filter(p=>p.name&&p.link);
+    document.getElementById('lazadaCount').textContent=`✅ โหลดแล้ว ${lazadaData.length} รายการ (Demo)`;
+    document.getElementById('lazadaCount').style.color='var(--green)';
+    toast(`✓ Lazada: ${lazadaData.length} รายการ (Local Mode)`);
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// ── LOAD TIKTOK (CSV/Excel) ──
+function loadTikTok(input){
+  const file=input.files[0]; if(!file) return;
+  const reader=new FileReader();
+  if(file.name.endsWith('.csv')){
+    reader.onload=e=>{
+      const lines=e.target.result.split('\n').filter(l=>l.trim());
+      const headers=parseCSVRow(lines[0]);
+      tiktokData=lines.slice(1).map(line=>{
+        const vals=parseCSVRow(line);
+        const obj={};headers.forEach((h,i)=>obj[h.trim()]=vals[i]?.trim()||'');
+        return {name:obj['product_name']||obj['ชื่อสินค้า']||'',price:obj['price']||obj['sale_price']||'',link:obj['affiliate_link']||obj['link']||'',platform:'tiktok'};
+      }).filter(p=>p.name&&p.link);
+      document.getElementById('tiktokCount').textContent=`✅ โหลดแล้ว ${tiktokData.length} รายการ (Demo)`;
+      document.getElementById('tiktokCount').style.color='var(--green)';
+      toast(`✓ TikTok: ${tiktokData.length} รายการ (Local Mode)`);
+    };
+    reader.readAsText(file,'UTF-8');
+  }
+}
+
+function parseCSVRow(row){
+  const result=[]; let cur=''; let inQ=false;
+  for(let i=0;i<row.length;i++){
+    const c=row[i];
+    if(c==='"'){inQ=!inQ;}
+    else if(c===','&&!inQ){result.push(cur);cur='';}
+    else cur+=c;
+  }
+  result.push(cur);
+  return result;
+}
+
+// ── RUN MATCH (Local Mode — ใช้ logic จำลอง) ──
+async function runMatch(){
+  if(!shopeeData.length||!lazadaData.length){
+    toast('กรุณาอัปโหลดไฟล์ Shopee และ Lazada ก่อนครับ (หรือใช้ Demo Mode)',true);
+    
+    // สร้างข้อมูลตัวอย่างถ้ายังไม่มี
+    if(shopeeData.length === 0) {
+      shopeeData = [
+        { name: 'แคชบาร์ SW-Motech EVO สำหรับ ADV350', price: '6800', link: 'https://shopee.co.th/product/1', platform: 'shopee' },
+        { name: 'ท่อ Yoshimura R77 CBR650R', price: '12500', link: 'https://shopee.co.th/product/2', platform: 'shopee' }
+      ];
+    }
+    if(lazadaData.length === 0) {
+      lazadaData = [
+        { name: 'SW-Motech EVO Crash Bar Honda ADV350', price: '6900', link: 'https://lazada.co.th/product/1', brand: 'SW-Motech', platform: 'lazada' },
+        { name: 'Yoshimura R77 Full Exhaust CBR650R', price: '12900', link: 'https://lazada.co.th/product/2', brand: 'Yoshimura', platform: 'lazada' }
+      ];
+    }
+  }
+
+  const btn=document.getElementById('matchRunBtn');
+  btn.textContent='⏳ MATCHING...'; btn.disabled=true;
+  document.getElementById('matchResults').innerHTML='';
+  document.getElementById('matchSummary').style.display='none';
+  matchResults=[];
+
+  const batchSize=parseInt(document.getElementById('matchBatch').value);
+  const threshold=parseInt(document.getElementById('matchThreshold').value);
+  const total=Math.ceil(shopeeData.length/batchSize);
+  let green=0,yellow=0,red=0;
+
+  for(let b=0;b<Math.min(total,5);b++){
+    const batch=shopeeData.slice(b*batchSize,(b+1)*batchSize);
+    const pct=Math.round(((b+1)/Math.min(total,5))*100);
+    document.getElementById('matchProgress').style.width=pct+'%';
+    document.getElementById('matchStatus').textContent=`MATCHING BATCH ${b+1}/${Math.min(total,5)} (DEMO)`;
+    document.getElementById('matchCount').textContent=`${Math.min((b+1)*batchSize,shopeeData.length)}/${shopeeData.length}`;
+
+    // สร้างผลลัพธ์จำลอง
+    const results = batch.map((item, idx) => ({
+      score: Math.floor(Math.random() * 40) + 60, // 60-100
+      reason: 'DEMO: สินค้าตรงตามชื่อและแบรนด์ (Local Mode)',
+      shopee: item,
+      lazada: lazadaData[idx % lazadaData.length] || lazadaData[0],
+      tiktok: null
+    }));
+
+    results.forEach((r,i)=>{
+      const level = r.score >= threshold ? 'high' : r.score >= 50 ? 'mid' : 'low';
+      if(level==='high') green++; else if(level==='mid') yellow++; else red++;
+      matchResults.push({...r, level, approved: level==='high', idx: matchResults.length});
+      renderMatchCard({...r, level, approved: level==='high', idx: matchResults.length-1}, i*40);
+    });
+
+    await sleep(600);
+  }
+
+  document.getElementById('matchProgress').style.width='100%';
+  document.getElementById('matchStatus').textContent='COMPLETE ✓ (DEMO)';
+  document.getElementById('sumGreen').textContent=green;
+  document.getElementById('sumYellow').textContent=yellow;
+  document.getElementById('sumRed').textContent=red;
+  document.getElementById('matchSummary').style.display='block';
+  btn.textContent='🤖 RUN AI MATCH (GEMINI) — LOCAL MODE';
+  btn.disabled=false;
+  toast(`✓ Match เสร็จ! High:${green} Review:${yellow} Low:${red} (Demo Mode)`);
+}
+
+// ── RENDER MATCH CARD ──
+function renderMatchCard(r, delay=0){
+  const el=document.createElement('div');
+  el.className=`match-card ${r.level}`;
+  el.id=`mc_${r.idx}`;
+  el.style.animationDelay=delay+'ms';
+  const scoreClass=r.level;
+  el.innerHTML=`
+    <div class="match-score ${scoreClass}">${r.score}%</div>
+    <div class="match-pair">
+      ${r.shopee?`<div class="match-item">
+        <div class="match-item-platform" style="color:#ff6633;">🟠 SHOPEE</div>
+        <div class="match-item-name">${r.shopee.name}</div>
+        <div class="match-item-price" style="color:#ff6633;">฿${r.shopee.price}</div>
+        <div class="match-item-link" style="color:#ff6633;">${r.shopee.link||'—'}</div>
+      </div>`:''}
+      ${r.lazada?`<div class="match-item">
+        <div class="match-item-platform" style="color:#6b74ff;">🟣 LAZADA</div>
+        <div class="match-item-name">${r.lazada.name}</div>
+        <div class="match-item-price" style="color:#6b74ff;">฿${r.lazada.price}</div>
+        <div class="match-item-link" style="color:#6b74ff;">${r.lazada.link||'—'}</div>
+      </div>`:`<div class="match-item" style="opacity:0.4;"><div class="match-item-platform" style="color:var(--text3);">🟣 LAZADA</div><div class="match-item-name" style="color:var(--text3);">— ไม่พบคู่</div></div>`}
+      ${r.tiktok?`<div class="match-item">
+        <div class="match-item-platform" style="color:#ff0050;">⚫ TIKTOK</div>
+        <div class="match-item-name">${r.tiktok.name}</div>
+        <div class="match-item-price" style="color:#ff0050;">฿${r.tiktok.price}</div>
+        <div class="match-item-link" style="color:#ff0050;">${r.tiktok.link||'—'}</div>
+      </div>`:''}
+    </div>
+    <div class="match-reason">🤖 ${r.reason}</div>
+    <div class="match-actions">
+      <button class="match-btn approve" onclick="approveMatch(${r.idx})">✅ APPROVE</button>
+      <button class="match-btn reject" onclick="rejectMatch(${r.idx})">❌ REJECT</button>
+      <button class="match-btn edit" onclick="editMatch(${r.idx})">✏️ EDIT</button>
+    </div>
+  `;
+  document.getElementById('matchResults').appendChild(el);
+}
+
+function approveMatch(idx){
+  matchResults[idx].approved=true;
+  const card=document.getElementById(`mc_${idx}`);
+  if(card){card.className='match-card approved';card.querySelector('.match-actions').innerHTML='<span style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;color:var(--green);">✅ APPROVED</span>';}
+}
+
+function rejectMatch(idx){
+  matchResults[idx].approved=false;
+  const card=document.getElementById(`mc_${idx}`);
+  if(card){card.style.opacity='0.3';card.querySelector('.match-actions').innerHTML='<span style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;color:var(--red);">❌ REJECTED</span>';}
+}
+
+function editMatch(idx){
+  const r=matchResults[idx];
+  const name=prompt('ชื่อสินค้า:', r.shopee?.name||'');
+  if(name){matchResults[idx].editedName=name;toast('✓ แก้ไขชื่อแล้วครับ');}
+}
+
+function approveAll(){
+  const threshold=parseInt(document.getElementById('matchThreshold').value);
+  matchResults.forEach((r,i)=>{if(r.score>=threshold)approveMatch(i);});
+  toast(`✓ Approve สินค้า score ≥${threshold}% ทั้งหมดแล้วครับ (Demo)`);
+}
+
+function saveMatchedToLocal(){
+  const approved=matchResults.filter(r=>r.approved);
+  if(!approved.length){toast('ยังไม่มีสินค้าที่ Approve ครับ',true);return;}
+
+  const btn=document.querySelector('[onclick="saveMatchedToLocal()"]');
+  if(btn){btn.textContent='⏳ SAVING...';btn.disabled=true;}
+
+  let saved=0;
+  for(const r of approved){
+    const p={
+      name: r.editedName||r.shopee?.name||'',
+      brand: r.lazada?.brand||'',
+      cat:'other',
+      price: parseFloat(r.shopee?.price)||0,
+      plat:'shopee',
+      status:'active',
+      url: r.shopee?.link||'',
+      affIA:'',
+      affAT:'',
+      shopeeLink: r.shopee?.link||'',
+      lazadaLink: r.lazada?.link||'',
+      tiktokLink: r.tiktok?.link||'',
+      image: r.lazada?.image||'',
+      spec: '',
+      models: [],
+    };
+    dbInsertProd(p);
+    saved++;
+  }
+
+  if(btn){btn.textContent='💾 SAVE TO LOCAL STORAGE';btn.disabled=false;}
+  updateStats(); renderRecent();
+  toast(`✓ บันทึก ${saved} สินค้าเข้า Local Storage แล้วครับ!`);
+  setTimeout(()=>go('products',document.querySelectorAll('.nb')[4]),800);
+}
+
+// ── UTILS ──
+function toast(msg,err=false){
+  const t=document.getElementById('toast');t.textContent=msg;
+  t.className='toast show'+(err?' err':'');
+  setTimeout(()=>t.className='toast',3200);
+}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+
+// ── LOAD SHEETJS ──
+(function loadSheetJS(){
+  const s=document.createElement('script');
+  s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+  document.head.appendChild(s);
+})();
+</script>
+</body>
+</html>
