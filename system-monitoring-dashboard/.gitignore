@@ -1,0 +1,7 @@
+node_modules/
+.next/
+out/
+.env.local
+agent/service-account.json
+npm-debug.log*
+*.local
