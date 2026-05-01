@@ -5,3 +5,12 @@ out
 .env.local
 .env.*.local
 npm-debug.log*
+
+# Dev artifacts
+logs/
+reports/
+do_move.bat
+
+# Build artifacts
+tsconfig.tsbuildinfo
+**/tsconfig.tsbuildinfo
