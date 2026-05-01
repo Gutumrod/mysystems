@@ -6,6 +6,11 @@ export function cn(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(" ");
 }
 
+/**
+ * Returns the shop UUID for local development fallback only.
+ * In production, the shop is resolved by slug via subdomain routing
+ * (see middleware.ts + page.tsx). This function is NOT called in production.
+ */
 export function getShopId() {
   return process.env.NEXT_PUBLIC_SHOP_ID ?? "11111111-1111-1111-1111-111111111111";
 }

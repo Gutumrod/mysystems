@@ -1,4 +1,5 @@
 ﻿import { addDays, format } from "date-fns";
+import { headers } from "next/headers";
 import { AlertCircle } from "lucide-react";
 import { BookingForm } from "@/components/booking/BookingForm";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,23 +15,18 @@ export default async function Page() {
   }
 
   const supabase = await createSupabaseServerClient();
-  const shopId = getShopId();
   const today = format(new Date(), "yyyy-MM-dd");
   const limit = format(addDays(new Date(), 45), "yyyy-MM-dd");
 
-  const [{ data: shop }, { data: services }, { data: holidays }, { data: bookings }] = await Promise.all([
-    supabase.schema("bike_booking").from("shops").select("*").eq("id", shopId).single<Shop>(),
-    supabase.schema("bike_booking").from("service_items").select("*").eq("shop_id", shopId).eq("is_active", true).order("sort_order").returns<ServiceItem[]>(),
-    supabase.schema("bike_booking").from("shop_holidays").select("*").eq("shop_id", shopId).gte("holiday_date", today).returns<ShopHoliday[]>(),
-    supabase
-      .schema("bike_booking")
-      .from("public_booking_slots")
-      .select("*")
-      .eq("shop_id", shopId)
-      .gte("booking_date", today)
-      .lte("booking_date", limit)
-      .returns<BookingSlot[]>()
-  ]);
+  // Read slug injected by middleware (production subdomain routing).
+  // Falls back to NEXT_PUBLIC_SHOP_ID UUID in local development.
+  const headersList = await headers();
+  const shopSlug = headersList.get("x-shop-slug");
+
+  // Step 1: Fetch the shop record (slug → production, UUID → local dev)
+  const { data: shop } = shopSlug
+    ? await supabase.schema("bike_booking").from("shops").select("*").eq("slug", shopSlug).single<Shop>()
+    : await supabase.schema("bike_booking").from("shops").select("*").eq("id", getShopId()).single<Shop>();
 
   if (!shop) {
     return (
@@ -39,14 +35,28 @@ export default async function Page() {
           <CardContent className="flex items-start gap-3 p-5">
             <AlertCircle className="mt-1 text-[#ff7350]" />
             <div>
-              <h1 className="text-lg font-semibold">ไม่พบร้าน</h1>
-              <p className="text-sm text-muted-foreground">กรุณาตรวจสอบค่า NEXT_PUBLIC_SHOP_ID</p>
+              <h1 className="text-lg font-semibold">ร้านค้าไม่พบ</h1>
+              <p className="text-sm text-muted-foreground">ไม่พบร้านค้านี้ในระบบ</p>
             </div>
           </CardContent>
         </Card>
       </main>
     );
   }
+
+  // Step 2: Fetch services, holidays, and bookings in parallel using shop.id
+  const [{ data: services }, { data: holidays }, { data: bookings }] = await Promise.all([
+    supabase.schema("bike_booking").from("service_items").select("*").eq("shop_id", shop.id).eq("is_active", true).order("sort_order").returns<ServiceItem[]>(),
+    supabase.schema("bike_booking").from("shop_holidays").select("*").eq("shop_id", shop.id).gte("holiday_date", today).returns<ShopHoliday[]>(),
+    supabase
+      .schema("bike_booking")
+      .from("public_booking_slots")
+      .select("*")
+      .eq("shop_id", shop.id)
+      .gte("booking_date", today)
+      .lte("booking_date", limit)
+      .returns<BookingSlot[]>()
+  ]);
 
   return <BookingShell shop={shop} services={services ?? []} holidays={holidays ?? []} bookings={bookings ?? []} />;
 }
