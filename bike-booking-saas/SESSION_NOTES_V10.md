@@ -1,140 +1,219 @@
-# SESSION NOTES V10 — Phase 4: Middleware & Deploy Verification
+# SESSION NOTES V10 — Phase 4: Verify, Fix & Admin Deploy Prep
 
 > วันที่: 1 พฤษภาคม 2569 (2026-05-01)
+> Sub-agent: Claude Sonnet 4.6
 
 ---
 
-## สถานะก่อนเริ่ม V10
+## เป้าหมาย
 
-รับช่วงต่อจาก V9 sub-agent ที่ทำสิ่งต่อไปนี้สำเร็จแล้ว:
+รับช่วงต่อจาก V9 เพื่อ:
+
+1. ยืนยันว่า V9 changes push ขึ้น GitHub แล้ว
+2. ตรวจคุณภาพโค้ดด้วย TypeScript + Gemini CLI
+3. ตรวจ runtime จริงบน Vercel
+4. สร้าง Vercel project สำหรับ `apps/booking-admin`
+5. บันทึก session notes ฉบับสมบูรณ์
+
+---
+
+## สถานะรับช่วงต่อจาก V9
+
+V9 sub-agent ทำ 3 commits สำเร็จและ push ขึ้น `origin/main` แล้ว:
 
 | Commit | สิ่งที่ทำ |
 |--------|---------|
-| `5de74b2` | `feat: add multi-tenant subdomain routing` — เพิ่ม `middleware.ts` ให้ `apps/booking-consumer` |
-| `7e42699` | `fix: remove outputFileTracingRoot for Vercel compatibility` — ลบ config เพื่อทดสอบ |
-| `e836d90` | `fix: correct outputFileTracingRoot for Vercel repo root` — ใส่กลับด้วย `../../..` |
+| `5de74b2` | `feat: add multi-tenant subdomain routing` — เพิ่ม `middleware.ts` ใน `apps/booking-consumer` รองรับ 3 โหมด |
+| `7e42699` | `fix: remove outputFileTracingRoot for Vercel compatibility` — ลบทดสอบ |
+| `e836d90` | `fix: correct outputFileTracingRoot for Vercel repo root` — ใส่กลับเป็น `../../..` (3 ระดับ) |
 
-**ผล V9:** `craftbikelab-booking` deploy บน Vercel สถานะ READY ✅ — build ผ่านทั้ง 2 apps
+ผล V9: `craftbikelab-booking` บน Vercel สถานะ **READY** ✅ — build ผ่านทั้ง 2 apps
 
 ---
 
 ## สิ่งที่ทำใน V10
 
-### 1. ตรวจสอบ Git Status
+### 1. ยืนยัน Git Status (push แล้ว)
 
-- Working tree **clean** — ไม่มีไฟล์ค้างที่ต้องสร้าง commit
-- Branch: `claude/bold-zhukovsky-aa349c`
-- Commit ล่าสุด: `e836d90` อยู่ที่ `origin/main` แล้ว — ไม่ต้อง push เพิ่ม
+```
+git status → working tree clean ✅
+git log origin/main → e836d90 ตรงกับ local HEAD ✅
+```
+
+V9 changes อยู่ใน `origin/main` เรียบร้อย ไม่มีอะไรค้างต้อง push
+
+---
 
 ### 2. ตรวจสอบโค้ดคุณภาพ
 
 **TypeScript type-check:**
+```bash
+cd apps/booking-consumer && npx tsc --noEmit
+# → 0 errors ✅
 ```
-apps/booking-consumer: 0 errors ✅
+
+**เครื่องมือ AI ที่มีในเครื่อง (ตรวจสอบครั้งแรก):**
+
+| CLI | สถานะ |
+|-----|------|
+| `codex` | ✅ พร้อมใช้ |
+| `gemini` | ✅ พร้อมใช้ |
+| `ollama` | ✅ พร้อมใช้ |
+
+**Gemini Code Review ผล:**
+
+#### ประเด็นที่ 1: `outputFileTracingRoot` — False Alarm ✅
+
+Gemini แนะนำให้เปลี่ยนจาก `../../..` เป็น `../../` แต่หลังวิเคราะห์โครงสร้างจริง ค่าปัจจุบันถูกต้องแล้ว:
+
+```
+apps/booking-consumer/  ─(..)/→  apps/
+apps/                   ─(..)/→  bike-booking-saas/
+bike-booking-saas/      ─(..)/→  mysystems/  ← git repo root
 ```
 
-**เครื่องมือที่มีในเครื่อง:**
-- `codex` CLI: ✅
-- `gemini` CLI: ✅
-- `ollama`: ✅
+Vercel clone repo `mysystems` ทั้งหมด → tracing root ต้องอยู่ที่ `mysystems/` (3 ระดับขึ้น) ไม่ใช่แค่ `bike-booking-saas/` (2 ระดับ) → **ไม่ต้องแก้**
 
-**Gemini Code Review — ประเด็นที่พบ:**
+#### ประเด็นที่ 2: Reserved Subdomain Collision — Real Bug ⚠️ → แก้แล้ว ✅
 
-#### `middleware.ts` (apps/booking-consumer)
-| ประเด็น | ระดับ | รายละเอียด |
-|---------|------|-----------|
-| Reserved subdomain collision | ⚠️ Medium | เมื่อผู้ใช้เข้า `booking.craftbikelab.com` โดยตรง → `slug = "booking"` ซึ่งไม่ใช่ tenant — ควรเพิ่ม guard ป้องกัน |
-| Fragile split logic | ℹ️ Low | `host.split(".")[0]` ใช้ได้กับ `slug.booking.craftbikelab.com` แต่ล้มเหลวถ้ามี `www.` นำหน้า — ยังรับได้สำหรับ use case ปัจจุบัน |
-| Local subdomain testing | ℹ️ Info | ทดสอบ `tenant.localhost:3000` ไม่ได้ — expected, ไม่ใช่ bug |
+ปัญหา: เมื่อผู้ใช้เข้า `booking.craftbikelab.com` (base domain) หรือ `craftbikelab-booking.vercel.app` (Vercel preview) — middleware เดิมจะ extract slug ได้ว่า `"booking"` หรือ `"craftbikelab-booking"` และส่งเป็น `x-shop-slug` header ทำให้ query Supabase ด้วย slug ที่ไม่มีอยู่จริง
 
-#### `next.config.ts` — `outputFileTracingRoot: join(process.cwd(), "../../..")`
-| ประเด็น | สถานะ |
-|---------|------|
-| Gemini แนะนำ `../../` (2 ระดับ) | ❌ ไม่ถูก |
-| ค่าปัจจุบัน `../../..` (3 ระดับ) | ✅ ถูกต้อง |
-
-**เหตุผลที่ 3 ระดับถูกต้อง:** Vercel clone repo `mysystems` (git root) ทั้งหมด แล้ว build จาก `bike-booking-saas/apps/booking-consumer/` ดังนั้น:
-```
-apps/booking-consumer/  → ..  → apps/
-apps/                   → ..  → bike-booking-saas/
-bike-booking-saas/      → ..  → mysystems/  ← git repo root ✅
-```
-การตั้ง tracing root ที่ `mysystems/` ทำให้ Vercel bundling รวม shared dependencies ได้ถูกต้อง
-
-### 3. ตรวจ Runtime จริง
-
-| URL | HTTP Status | ผล |
-|-----|------------|-----|
-| `https://craftbikelab-booking.vercel.app` | **200 OK** ✅ | แสดงหน้า "ร้านค้าไม่พบ" — expected (ดูด้านล่าง) |
-| `https://booking.craftbikelab.com` | **404** ⚠️ | DNS ยังไม่ได้ตั้งค่า |
-
-**เหตุผลที่ "ร้านค้าไม่พบ" เป็น expected behavior:**
-
-App ตอบ HTTP 200 และ render ได้ปกติ — แสดงว่า build/deploy ถูกต้อง  
-"ร้านค้าไม่พบ" เกิดเพราะ:
-1. URL เป็น `craftbikelab-booking.vercel.app` ไม่ใช่ `{slug}.booking.craftbikelab.com` → middleware ไม่ set `x-shop-slug` header
-2. `NEXT_PUBLIC_SHOP_ID` ใน Vercel env ยังเป็น test UUID `11111111-1111-1111-1111-111111111111`
-3. Supabase query หา shop ด้วย test ID ไม่เจอ → fallback "ร้านค้าไม่พบ"
-
----
-
-## สิ่งที่ต้องทำต่อ (ขั้นตอนที่เหลือของ Phase 4)
-
-### Priority 1 — ทำก่อน (ทำเองบน dashboard)
-
-| ขั้นตอน | รายละเอียด |
-|---------|-----------|
-| **ตั้ง NEXT_PUBLIC_SHOP_ID จริงใน Vercel** | เข้า Supabase → SQL Editor → `SELECT id, name FROM bike_booking.shops;` → copy UUID → ใส่ใน Vercel project settings |
-| **ตั้ง DNS บน Hostinger** | CNAME `booking` → `cname.vercel-dns.com` |
-| **ตั้ง Supabase Auth Redirect URL** | Authentication → URL Config → Site URL: `https://booking-admin.craftbikelab.com` |
-
-### Priority 2 — Code fix (ควรทำก่อน go-live)
-
-**เพิ่ม reserved subdomain guard ใน `apps/booking-consumer/middleware.ts`:**
+**การแก้ (commit `f6b857c`):**
 
 ```typescript
-// ป้องกัน base domain และ Vercel preview URLs
-const RESERVED_SLUGS = new Set(["booking", "www", "staging", "preview"]);
+// Platform subdomains ที่ไม่ใช่ tenant
+const RESERVED_SLUGS = new Set([
+  "booking", "booking-admin", "www",
+  "staging", "preview", "api",
+]);
+
+// *.vercel.app preview deployments
 const isVercelPreview = host.endsWith(".vercel.app");
 
+const rawSlug = host.split(".")[0];
+
+// slug = null → fallback ไป NEXT_PUBLIC_SHOP_ID
 const slug =
-  isLocalDev || isVercelPreview || RESERVED_SLUGS.has(host.split(".")[0])
+  isLocalDev || isVercelPreview || RESERVED_SLUGS.has(rawSlug)
     ? null
-    : host.split(".")[0];
+    : rawSlug;
 ```
 
-### Priority 3 — ทำทีหลัง
+---
 
-- Deploy `apps/booking-admin` บน Vercel (ยังไม่ได้ทำ)
-- ตั้ง DNS `booking-admin` → `cname.vercel-dns.com`
-- End-to-end smoke test ตาม checklist ใน `DEPLOY_PLAN.md`
+### 3. ตรวจ Runtime จริงบน Vercel
+
+| URL | HTTP | ผล | หมายเหตุ |
+|-----|-----|----|---------|
+| `https://craftbikelab-booking.vercel.app` | **200** ✅ | "ร้านค้าไม่พบ" | Expected — ดูด้านล่าง |
+| `https://booking.craftbikelab.com` | **404** ⚠️ | Not found | DNS ยังไม่ตั้ง |
+
+**ทำไม "ร้านค้าไม่พบ" ถึงเป็น expected:**
+
+App render ได้ปกติ (200 OK) — หมายความว่า build/deploy ถูกต้องทุกอย่าง  
+"ร้านค้าไม่พบ" เกิดจาก:
+- URL ไม่มี tenant prefix → ไม่มี `x-shop-slug` header
+- `NEXT_PUBLIC_SHOP_ID` ใน Vercel ยังเป็น test UUID `11111111-...-1111`
+- Supabase query ไม่เจอ shop → fallback error state
+
+แก้ได้ด้วยการใส่ `NEXT_PUBLIC_SHOP_ID` จริงใน Vercel env vars
 
 ---
 
-## สถานะ Deployment สรุป
+### 4. สร้าง Vercel Project สำหรับ booking-admin
 
-| App | Vercel Project | Status | Custom Domain |
-|-----|--------------|--------|--------------|
-| `apps/booking-consumer` | `craftbikelab-booking` | ✅ READY (build ผ่าน) | ⚠️ DNS pending |
-| `apps/booking-admin` | `craftbikelab-booking-admin` | ❓ ยังไม่ได้ setup | ❌ ยังไม่ได้ตั้ง |
+**ผลการค้นหา Vercel Token:**
+
+| ที่ตรวจ | ผล |
+|--------|---|
+| `VERCEL_TOKEN` env var | ❌ ไม่มี |
+| `~/.config/vercel/auth.json` | ❌ ไม่มี |
+| `AppData/Roaming/com.vercel.cli/auth.json` | ❌ ไม่มี |
+| `.env*` files ในโปรเจค | ❌ ไม่มี |
+
+**สรุป: ไม่สามารถสร้าง project ผ่าน API ได้ ต้องทำเองหรือสร้าง token ก่อน**
+
+ข้อมูลที่เตรียมไว้พร้อมเพื่อใช้ตอนสร้าง:
+- Team ID: `team_rdPAt9hlvE3YmKS71wGy4jfx`
+- Project name: `craftbikelab-booking-admin`
+- Root Directory: `bike-booking-saas/apps/booking-admin`
+- Repo: `mysystems` (GitHub)
 
 ---
 
-## ไฟล์สำคัญที่เกี่ยวข้อง
+### 5. Commits ที่ทำใน V10
 
-| ไฟล์ | สถานะ | หมายเหตุ |
-|------|-------|---------|
-| `apps/booking-consumer/middleware.ts` | ✅ Committed | Multi-tenant subdomain routing |
-| `apps/booking-consumer/next.config.ts` | ✅ Committed | `outputFileTracingRoot: ../../..` (3 levels — ถูกต้อง) |
-| `apps/booking-consumer/vercel.json` | ✅ Committed | `{"framework": "nextjs"}` |
-| `apps/booking-consumer/.env.production.example` | ✅ Committed | Reference สำหรับตั้ง Vercel env vars |
-| `DEPLOY_PLAN.md` | ✅ Committed | แผน deploy ฉบับสมบูรณ์ พร้อม checklist |
+| Commit | Message | ไฟล์ |
+|--------|---------|------|
+| `f6b857c` | `fix: add reserved slug blocklist to middleware` | `apps/booking-consumer/middleware.ts`, `SESSION_NOTES_V10.md` |
 
 ---
 
-## ทีม AI ที่ใช้ใน V10
+## สถานะ Deployment ณ สิ้น V10
 
-| เครื่องมือ | บทบาท |
-|-----------|------|
-| Claude Sonnet 4.6 (sub-agent) | Orchestrate, ตรวจสอบ, เขียน session notes |
-| Gemini CLI | Code review — middleware.ts และ next.config.ts |
+| App | Vercel Project | Build | Custom Domain |
+|-----|--------------|-------|--------------|
+| `apps/booking-consumer` | `craftbikelab-booking` | ✅ READY | ⚠️ DNS pending (booking.craftbikelab.com) |
+| `apps/booking-admin` | `craftbikelab-booking-admin` | ❌ ยังไม่ได้สร้าง project | ❌ ยังไม่ได้ตั้ง |
+
+---
+
+## สิ่งที่ค้าง (ก่อนปิด Phase 4)
+
+### 🔴 ทำก่อน — บน Vercel Dashboard (ทำเองหรือให้ token)
+
+**A. สร้าง Vercel project สำหรับ admin:**
+
+1. ไปที่ [vercel.com/new](https://vercel.com/new) → เลือก team `craftbikelab`
+2. Import repo `mysystems`
+3. กำหนดค่า:
+   - Project Name: `craftbikelab-booking-admin`
+   - **Root Directory: `bike-booking-saas/apps/booking-admin`** ← สำคัญมาก
+4. ใส่ Environment Variables:
+
+   | Variable | ค่า |
+   |----------|-----|
+   | `NEXT_PUBLIC_SUPABASE_URL` | `https://gsbbkdppaegrttcqmjuq.supabase.co` |
+   | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | จาก Supabase → Project Settings → API → anon public |
+   | `NEXT_PUBLIC_SHOP_ID` | UUID จริงจาก `SELECT id FROM bike_booking.shops LIMIT 1` |
+   | `SUPABASE_SERVICE_ROLE_KEY` | จาก Supabase → Project Settings → API → service_role |
+
+5. กด Deploy
+
+**B. แก้ NEXT_PUBLIC_SHOP_ID ใน craftbikelab-booking ด้วย:**
+
+ตอนนี้ยังใช้ test UUID `11111111-...-1111` → ต้องเปลี่ยนเป็น UUID จริงจาก Supabase ก่อน go-live
+
+### 🟡 ทำหลัง — DNS บน Hostinger
+
+| Subdomain | Record | ชี้ไปที่ |
+|-----------|--------|---------|
+| `booking` | CNAME | `cname.vercel-dns.com` |
+| `booking-admin` | CNAME | `cname.vercel-dns.com` |
+
+### 🟡 ทำหลัง — Supabase Auth Config
+
+ไปที่ Supabase Dashboard → Authentication → URL Configuration:
+- **Site URL:** `https://booking-admin.craftbikelab.com`
+- **Redirect URLs เพิ่ม:** `https://booking-admin.craftbikelab.com/**`
+
+### 🟢 ทางเลือก — ให้ Claude ทำ Vercel API แทน
+
+สร้าง Personal Access Token ที่ [vercel.com/account/tokens](https://vercel.com/account/tokens) → ชื่อ `claude-code-cli`, Scope: Full Account → แจ้ง token ให้ Claude → Claude จะสร้าง project ผ่าน API ได้ทันที
+
+---
+
+## สรุป
+
+| หัวข้อ | ผล |
+|-------|---|
+| V9 push ยืนยัน | ✅ อยู่ใน origin/main แล้ว |
+| TypeScript type-check | ✅ 0 errors |
+| Gemini review — outputFileTracingRoot | ✅ false alarm, ค่าเดิม `../../..` ถูกต้อง |
+| Gemini review — reserved slugs | ✅ แก้แล้ว commit `f6b857c` |
+| Runtime craftbikelab-booking.vercel.app | ✅ HTTP 200, render ได้ปกติ |
+| DNS booking.craftbikelab.com | ⚠️ ยังไม่ตั้ง |
+| Vercel project booking-admin | ❌ ยังไม่สร้าง (ไม่มี token) |
+| SESSION_NOTES_V10.md | ✅ commit + push แล้ว |
+
+Phase 4 เหลืองานส่วน infrastructure ที่ต้องทำบน dashboard (Vercel project + DNS + Supabase auth) — โค้ดฝั่ง code repository พร้อมแล้วทั้งหมด
