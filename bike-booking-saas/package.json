@@ -1,0 +1,14 @@
+{
+  "name": "bike-booking-saas",
+  "private": true,
+  "workspaces": [
+    "shop-frontend",
+    "shop-admin"
+  ],
+  "scripts": {
+    "dev:shop": "npm --workspace shop-frontend run dev",
+    "dev:admin": "npm --workspace shop-admin run dev",
+    "build": "npm --workspace shop-frontend run build && npm --workspace shop-admin run build",
+    "lint": "npm --workspace shop-frontend run lint && npm --workspace shop-admin run lint"
+  }
+}
