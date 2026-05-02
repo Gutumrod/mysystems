@@ -141,48 +141,64 @@ App render ได้ปกติ (200 OK) — หมายความว่า 
 
 ---
 
-### 5. Commits ที่ทำใน V10
+### 5. Vercel Project สำหรับ booking-admin (ทำผ่าน API)
+
+สร้างสำเร็จด้วย Vercel REST API:
+- **Project ID:** `prj_lrPPLPzWHiKTAfGgNpIz5LCRaCXu`
+- **Project Name:** `craftbikelab-booking-admin`
+- **Root Directory:** `bike-booking-saas/apps/booking-admin`
+- **Repo:** `Gutumrod/mysystems` (GitHub, repoId: `1173527362`)
+
+Env vars ที่ตั้งไว้:
+
+| Variable | ค่า | targets |
+|----------|-----|---------|
+| `NEXT_PUBLIC_SUPABASE_URL` | `https://gsbbkdppaegrttcqmjuq.supabase.co` | production,preview,development |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | `eyJhbGci...uWc` (JWT) | production,preview,development |
+| `NEXT_PUBLIC_SHOP_ID` | `f9080dd8-9070-473c-9ff9-8e8a636bbdec` | production,preview,development |
+| `SUPABASE_SERVICE_ROLE_KEY` | `eyJ2IjoidjIi...` (v2 encrypted) | production,preview,development |
+
+Admin deployment: **✅ HTTP 307 → /login** (auth guard working)
+
+---
+
+### 6. แก้ Root Cause — Consumer แสดง "ร้านค้าไม่พบ"
+
+**ปัญหา:** `craftbikelab-booking.vercel.app` แสดง "ร้านค้าไม่พบ" ทั้งๆ ที่ schema และ shop data ใช้งานได้
+
+**Root Cause:** `NEXT_PUBLIC_SUPABASE_URL` และ `NEXT_PUBLIC_SUPABASE_ANON_KEY` บน consumer project เป็น **empty string** (ตั้งผิดในช่วง session ก่อน V9) ทำให้ `hasSupabaseEnv()` return false → app ใช้ demo mode แต่ไม่มี subdomain → ไม่ได้ทำ Supabase query เลย
+
+**การแก้:**
+1. ลบ env vars เก่าที่ว่างเปล่า (`ji1zYtKb4V1lnZzL`, `lMB34rM4to7Ju1l6`)
+2. เพิ่ม `NEXT_PUBLIC_SUPABASE_URL = https://gsbbkdppaegrttcqmjuq.supabase.co` (plain, ทุก target)
+3. เพิ่ม `NEXT_PUBLIC_SUPABASE_ANON_KEY = eyJhbGci...uWc` (plain, ทุก target)
+4. Fix `server.ts` `setAll` ให้มี try-catch (Server Component cookie writes throw)
+5. Trigger deployment ใหม่ด้วย SHA `d5e6289`
+
+**ผล:** Consumer แสดง "ชื่อร้านจริงของคุณ" (ชื่อ shop จริงใน Supabase) — ✅ ทำงานถูกต้อง
+
+---
+
+### 7. Commits ที่ทำใน V10
 
 | Commit | Message | ไฟล์ |
 |--------|---------|------|
-| `f6b857c` | `fix: add reserved slug blocklist to middleware` | `apps/booking-consumer/middleware.ts`, `SESSION_NOTES_V10.md` |
+| `f6b857c` | `fix: add reserved slug blocklist to middleware` | `apps/booking-consumer/middleware.ts` |
+| `04447c3` | `docs: add SESSION_NOTES_V10` | `SESSION_NOTES_V10.md` |
+| `d5e6289` | `fix: add try-catch to supabase server client setAll` | `apps/booking-consumer/lib/supabase/server.ts` |
 
 ---
 
 ## สถานะ Deployment ณ สิ้น V10
 
-| App | Vercel Project | Build | Custom Domain |
-|-----|--------------|-------|--------------|
-| `apps/booking-consumer` | `craftbikelab-booking` | ✅ READY | ⚠️ DNS pending (booking.craftbikelab.com) |
-| `apps/booking-admin` | `craftbikelab-booking-admin` | ❌ ยังไม่ได้สร้าง project | ❌ ยังไม่ได้ตั้ง |
+| App | Vercel Project | Build | URL | Custom Domain |
+|-----|--------------|-------|-----|--------------|
+| `apps/booking-consumer` | `craftbikelab-booking` (prj_7Qwpwu9X6VJ0miN8pXLfb3fXrFWV) | ✅ READY | `craftbikelab-booking.vercel.app` → 200 ✅ | ⚠️ DNS pending |
+| `apps/booking-admin` | `craftbikelab-booking-admin` (prj_lrPPLPzWHiKTAfGgNpIz5LCRaCXu) | ✅ READY | `craftbikelab-booking-admin.vercel.app` → 307 /login ✅ | ⚠️ DNS pending |
 
 ---
 
 ## สิ่งที่ค้าง (ก่อนปิด Phase 4)
-
-### 🔴 ทำก่อน — บน Vercel Dashboard (ทำเองหรือให้ token)
-
-**A. สร้าง Vercel project สำหรับ admin:**
-
-1. ไปที่ [vercel.com/new](https://vercel.com/new) → เลือก team `craftbikelab`
-2. Import repo `mysystems`
-3. กำหนดค่า:
-   - Project Name: `craftbikelab-booking-admin`
-   - **Root Directory: `bike-booking-saas/apps/booking-admin`** ← สำคัญมาก
-4. ใส่ Environment Variables:
-
-   | Variable | ค่า |
-   |----------|-----|
-   | `NEXT_PUBLIC_SUPABASE_URL` | `https://gsbbkdppaegrttcqmjuq.supabase.co` |
-   | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | จาก Supabase → Project Settings → API → anon public |
-   | `NEXT_PUBLIC_SHOP_ID` | UUID จริงจาก `SELECT id FROM bike_booking.shops LIMIT 1` |
-   | `SUPABASE_SERVICE_ROLE_KEY` | จาก Supabase → Project Settings → API → service_role |
-
-5. กด Deploy
-
-**B. แก้ NEXT_PUBLIC_SHOP_ID ใน craftbikelab-booking ด้วย:**
-
-ตอนนี้ยังใช้ test UUID `11111111-...-1111` → ต้องเปลี่ยนเป็น UUID จริงจาก Supabase ก่อน go-live
 
 ### 🟡 ทำหลัง — DNS บน Hostinger
 
@@ -191,15 +207,17 @@ App render ได้ปกติ (200 OK) — หมายความว่า 
 | `booking` | CNAME | `cname.vercel-dns.com` |
 | `booking-admin` | CNAME | `cname.vercel-dns.com` |
 
+จากนั้น Vercel Dashboard → เพิ่ม custom domain ให้แต่ละ project
+
 ### 🟡 ทำหลัง — Supabase Auth Config
 
 ไปที่ Supabase Dashboard → Authentication → URL Configuration:
 - **Site URL:** `https://booking-admin.craftbikelab.com`
 - **Redirect URLs เพิ่ม:** `https://booking-admin.craftbikelab.com/**`
 
-### 🟢 ทางเลือก — ให้ Claude ทำ Vercel API แทน
+### 🟡 ทำหลัง — ใส่ข้อมูลร้านจริงใน Supabase
 
-สร้าง Personal Access Token ที่ [vercel.com/account/tokens](https://vercel.com/account/tokens) → ชื่อ `claude-code-cli`, Scope: Full Account → แจ้ง token ให้ Claude → Claude จะสร้าง project ผ่าน API ได้ทันที
+Shop `f9080dd8-9070-473c-9ff9-8e8a636bbdec` ยังมีชื่อ placeholder "ชื่อร้านจริงของคุณ" → ต้องอัปเดตใน Supabase ก่อน go-live
 
 ---
 
@@ -211,9 +229,14 @@ App render ได้ปกติ (200 OK) — หมายความว่า 
 | TypeScript type-check | ✅ 0 errors |
 | Gemini review — outputFileTracingRoot | ✅ false alarm, ค่าเดิม `../../..` ถูกต้อง |
 | Gemini review — reserved slugs | ✅ แก้แล้ว commit `f6b857c` |
-| Runtime craftbikelab-booking.vercel.app | ✅ HTTP 200, render ได้ปกติ |
-| DNS booking.craftbikelab.com | ⚠️ ยังไม่ตั้ง |
-| Vercel project booking-admin | ❌ ยังไม่สร้าง (ไม่มี token) |
-| SESSION_NOTES_V10.md | ✅ commit + push แล้ว |
+| Vercel project booking-admin | ✅ สร้างแล้ว + deployed ผ่าน API |
+| bike_booking schema permissions | ✅ USAGE + SELECT grants ทำงาน |
+| Consumer env vars แก้ไข | ✅ URL+KEY ว่างเปล่า → ใส่ค่าถูกต้องแล้ว |
+| server.ts setAll try-catch | ✅ commit `d5e6289` |
+| Runtime craftbikelab-booking.vercel.app | ✅ HTTP 200, แสดงข้อมูล shop จริงจาก Supabase |
+| Runtime craftbikelab-booking-admin.vercel.app | ✅ HTTP 307 → /login |
+| DNS booking.craftbikelab.com | ⚠️ ยังไม่ตั้ง (ต้องทำบน Hostinger) |
+| DNS booking-admin.craftbikelab.com | ⚠️ ยังไม่ตั้ง (ต้องทำบน Hostinger) |
+| SESSION_NOTES_V10.md | ✅ อัปเดตสมบูรณ์ |
 
-Phase 4 เหลืองานส่วน infrastructure ที่ต้องทำบน dashboard (Vercel project + DNS + Supabase auth) — โค้ดฝั่ง code repository พร้อมแล้วทั้งหมด
+Phase 4 โค้ดฝั่ง repository เสร็จสมบูรณ์ทั้งหมด เหลือเฉพาะ DNS + Supabase auth redirect URL + ใส่ข้อมูลร้านจริง
