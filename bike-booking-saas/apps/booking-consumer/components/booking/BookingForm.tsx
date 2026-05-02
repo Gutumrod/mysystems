@@ -82,18 +82,22 @@ export function BookingForm({ shop, services, holidays, bookings, demoMode = fal
       return;
     }
 
-    const payload = {
-      shop_id: shop.id,
-      ...values,
-      customer_fb: values.customer_fb || null,
-      customer_line_id: values.customer_line_id || null,
-      bike_year: values.bike_year === "" ? null : values.bike_year,
-      booking_time_end: endTime,
-      additional_notes: values.additional_notes || null,
-      status: "confirmed" as const
-    };
-
-    const { data, error } = await supabase.schema("bike_booking").from("bookings").insert(payload).select("id").single();
+    const { data: bookingId, error } = await supabase
+      .schema("bike_booking")
+      .rpc("create_public_booking", {
+        p_shop_id:            shop.id,
+        p_customer_name:      values.customer_name,
+        p_customer_phone:     values.customer_phone,
+        p_customer_fb:        values.customer_fb || null,
+        p_customer_line_id:   values.customer_line_id || null,
+        p_bike_model:         values.bike_model,
+        p_bike_year:          values.bike_year === "" ? null : values.bike_year,
+        p_service_items:      values.service_items,
+        p_booking_date:       values.booking_date,
+        p_booking_time_start: values.booking_time_start,
+        p_booking_time_end:   endTime,
+        p_additional_notes:   values.additional_notes || null,
+      });
     setSubmitting(false);
 
     if (error) {
@@ -109,7 +113,7 @@ export function BookingForm({ shop, services, holidays, bookings, demoMode = fal
     }
 
     toast.success("จองคิวสำเร็จ");
-    window.location.href = `/success?id=${data.id}`;
+    window.location.href = `/success?id=${bookingId}`;
   }
 
   return (
