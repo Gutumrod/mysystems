@@ -1,6 +1,6 @@
 "use client";
 
-import { format, parse } from "date-fns";
+import { format, parse, startOfWeek } from "date-fns";
 import { th } from "date-fns/locale";
 import { dateFnsLocalizer, Calendar, type EventProps } from "react-big-calendar";
 import { useState } from "react";
@@ -12,7 +12,7 @@ import { serviceNames, statusClass, statusLabel } from "@/lib/utils";
 const localizer = dateFnsLocalizer({
   format,
   parse,
-  startOfWeek: () => new Date(),
+  startOfWeek,
   getDay: (date: Date) => date.getDay(),
   locales: { th }
 });

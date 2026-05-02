@@ -62,15 +62,34 @@ export function ServicesManager({ initialServices, shopId, demoMode = false }: P
     toast.success("เพิ่มบริการแล้ว");
   }
 
-  async function updateService(service: ServiceItem, patch: Partial<ServiceItem>) {
+  function updateServiceDraft(service: ServiceItem, patch: Partial<ServiceItem>) {
     const next = { ...service, ...patch };
     setServices((items) => items.map((item) => (item.id === service.id ? next : item)));
+  }
+
+  async function persistService(service: ServiceItem, patch: Partial<Pick<ServiceItem, "name" | "duration_hours" | "is_active">>) {
+    const nextPatch = { ...patch };
+    if (typeof nextPatch.name === "string") {
+      nextPatch.name = nextPatch.name.trim();
+      if (!nextPatch.name) {
+        toast.error("กรุณากรอกชื่อบริการ");
+        return;
+      }
+    }
+    if (typeof nextPatch.duration_hours === "number" && (nextPatch.duration_hours < 1 || nextPatch.duration_hours > 12)) {
+      toast.error("ระยะเวลาต้องอยู่ระหว่าง 1-12 ชั่วโมง");
+      return;
+    }
+
+    const next = { ...service, ...nextPatch };
+    setServices((items) => items.map((item) => (item.id === service.id ? next : item)));
     if (!supabase) return;
-    const { error } = await supabase.schema("bike_booking").from("service_items").update(patch).eq("id", service.id);
+    const { error } = await supabase.schema("bike_booking").from("service_items").update(nextPatch).eq("id", service.id);
     if (error) toast.error(error.message);
   }
 
   async function deleteService(id: string) {
+    if (!window.confirm("ยืนยันการลบบริการนี้?")) return;
     if (!supabase) {
       setServices((items) => items.filter((item) => item.id !== id));
       return;
@@ -134,10 +153,21 @@ export function ServicesManager({ initialServices, shopId, demoMode = false }: P
                       <button {...dragProvided.dragHandleProps} className="cursor-grab text-muted-foreground" aria-label="ลากเพื่อเรียงลำดับ">
                         <GripVertical />
                       </button>
-                      <Input value={service.name} onChange={(event) => updateService(service, { name: event.target.value })} />
-                      <Input type="number" min={1} max={12} value={service.duration_hours} onChange={(event) => updateService(service, { duration_hours: Number(event.target.value) })} />
+                      <Input
+                        value={service.name}
+                        onChange={(event) => updateServiceDraft(service, { name: event.target.value })}
+                        onBlur={(event) => persistService(service, { name: event.target.value })}
+                      />
+                      <Input
+                        type="number"
+                        min={1}
+                        max={12}
+                        value={service.duration_hours}
+                        onChange={(event) => updateServiceDraft(service, { duration_hours: Number(event.target.value) })}
+                        onBlur={(event) => persistService(service, { duration_hours: Number(event.target.value) })}
+                      />
                       <label className="flex items-center gap-2 text-sm">
-                        <input type="checkbox" checked={service.is_active} onChange={(event) => updateService(service, { is_active: event.target.checked })} />
+                        <input type="checkbox" checked={service.is_active} onChange={(event) => persistService(service, { is_active: event.target.checked })} />
                         แสดง
                       </label>
                       <Button variant="ghost" size="icon" onClick={() => deleteService(service.id)} aria-label="ลบบริการ">

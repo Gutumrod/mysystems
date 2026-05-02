@@ -21,18 +21,56 @@ export function ShopSettingsForm({ shop, demoMode = false }: { shop: Shop; demoM
 
   async function save() {
     if (isSaving) return;
+    const nextForm = {
+      name: form.name.trim(),
+      phone: form.phone.trim(),
+      line_id: form.line_id.trim(),
+      facebook_url: form.facebook_url.trim()
+    };
+
+    if (!nextForm.name) {
+      toast.error("กรุณากรอกชื่อร้าน");
+      return;
+    }
+
+    const phoneDigits = nextForm.phone.replace(/\D/g, "");
+    if (nextForm.phone && (phoneDigits.length < 9 || phoneDigits.length > 10)) {
+      toast.error("กรุณากรอกเบอร์โทรให้ถูกต้อง");
+      return;
+    }
+
+    if (nextForm.line_id && /\s/.test(nextForm.line_id)) {
+      toast.error("LINE ID ต้องไม่มีช่องว่าง");
+      return;
+    }
+
+    if (nextForm.facebook_url) {
+      try {
+        const url = new URL(nextForm.facebook_url);
+        if (!["http:", "https:"].includes(url.protocol)) {
+          toast.error("Facebook URL ต้องขึ้นต้นด้วย http:// หรือ https://");
+          return;
+        }
+      } catch {
+        toast.error("Facebook URL ไม่ถูกต้อง");
+        return;
+      }
+    }
+
     setIsSaving(true);
     if (!supabase) {
+      setForm(nextForm);
       toast.success("บันทึกข้อมูลร้านแล้ว (โหมดตัวอย่าง)");
       setIsSaving(false);
       return;
     }
-    const { error } = await supabase.schema("bike_booking").from("shops").update(form).eq("id", shop.id);
+    const { error } = await supabase.schema("bike_booking").from("shops").update(nextForm).eq("id", shop.id);
     setIsSaving(false);
     if (error) {
       toast.error(error.message);
       return;
     }
+    setForm(nextForm);
     toast.success("บันทึกข้อมูลร้านแล้ว");
   }
 

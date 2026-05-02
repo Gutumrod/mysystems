@@ -10,6 +10,25 @@ export function getShopId() {
   return process.env.NEXT_PUBLIC_SHOP_ID ?? "11111111-1111-1111-1111-111111111111";
 }
 
+export function formatBangkokISODate(date = new Date()) {
+  return date.toLocaleDateString("en-CA", { timeZone: "Asia/Bangkok" });
+}
+
+export function getBangkokISODateOffset(days: number, date = new Date()) {
+  const [year, month, day] = formatBangkokISODate(date).split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, day + days)).toISOString().slice(0, 10);
+}
+
+export function getBangkokMonthRange(date = new Date()) {
+  const [year, month] = formatBangkokISODate(date).split("-").map(Number);
+  const endDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
+
+  return {
+    start: `${year}-${String(month).padStart(2, "0")}-01`,
+    end: `${year}-${String(month).padStart(2, "0")}-${String(endDay).padStart(2, "0")}`
+  };
+}
+
 export function formatThaiDate(date: string | Date) {
   const parsed = typeof date === "string" ? parse(date, "yyyy-MM-dd", new Date()) : date;
   return format(parsed, "d MMM yyyy", { locale: th });
@@ -41,7 +60,7 @@ export function serviceNames(ids: string[], services: ServiceItem[]) {
 
 export function bookingStats(bookings: Booking[]) {
   const now = new Date();
-  const today = format(now, "yyyy-MM-dd");
+  const today = formatBangkokISODate(now);
   const week = { start: startOfWeek(now), end: endOfWeek(now) };
   const month = { start: startOfMonth(now), end: endOfMonth(now) };
 

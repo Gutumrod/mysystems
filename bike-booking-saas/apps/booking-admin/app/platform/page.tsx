@@ -17,7 +17,6 @@ type ShopRow = {
 
 type BookingRow = {
   shop_id: string;
-  status: string;
 };
 
 export default async function PlatformPage() {
@@ -54,21 +53,33 @@ export default async function PlatformPage() {
     redirect("/unauthorized");
   }
 
-  const [{ data: shops }, { data: bookings }] = await Promise.all([
-    supabase.schema("bike_booking").from("shops").select("*").order("created_at", { ascending: false }).returns<ShopRow[]>(),
-    supabase.schema("bike_booking").from("bookings").select("shop_id,status").returns<BookingRow[]>()
-  ]);
+  const { data: shops } = await supabase
+    .schema("bike_booking")
+    .from("shops")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .returns<ShopRow[]>();
 
   const shopRows = shops ?? [];
-  const bookingRows = bookings ?? [];
+  const bookingCounts = await Promise.all(
+    shopRows.map(async (shop) => {
+      const { count } = await supabase
+        .schema("bike_booking")
+        .from("bookings")
+        .select("id", { count: "exact", head: true })
+        .eq("shop_id", shop.id);
+
+      return { shop_id: shop.id, count: count ?? 0 } satisfies BookingRow & { count: number };
+    })
+  );
   const totalShops = shopRows.length;
   const activeShops = shopRows.filter((shop) => shop.subscription_status === "active").length;
   const suspendedShops = shopRows.filter((shop) => shop.subscription_status === "suspended").length;
-  const totalBookings = bookingRows.length;
+  const totalBookings = bookingCounts.reduce((sum, row) => sum + row.count, 0);
 
   const bookingCountByShop = new Map<string, number>();
-  for (const booking of bookingRows) {
-    bookingCountByShop.set(booking.shop_id, (bookingCountByShop.get(booking.shop_id) ?? 0) + 1);
+  for (const booking of bookingCounts) {
+    bookingCountByShop.set(booking.shop_id, booking.count);
   }
 
   return (

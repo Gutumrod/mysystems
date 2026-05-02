@@ -36,7 +36,8 @@ export async function middleware(request: NextRequest) {
 
   const isAuthRoute = request.nextUrl.pathname.startsWith('/login')
   const isPlatformRoute = request.nextUrl.pathname.startsWith('/platform')
-  const isDashboardRoute = request.nextUrl.pathname.startsWith('/dashboard') || request.nextUrl.pathname === '/'
+  const shopAdminRoutes = ['/dashboard', '/bookings', '/calendar', '/services', '/settings']
+  const isShopAdminRoute = request.nextUrl.pathname === '/' || shopAdminRoutes.some((prefix) => request.nextUrl.pathname.startsWith(prefix))
 
   let isPlatformAdmin = false
   if (user && isPlatformRoute) {
@@ -50,7 +51,7 @@ export async function middleware(request: NextRequest) {
     isPlatformAdmin = Boolean(platformUser)
   }
 
-  if (!user && isDashboardRoute) {
+  if (!user && isShopAdminRoute) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)

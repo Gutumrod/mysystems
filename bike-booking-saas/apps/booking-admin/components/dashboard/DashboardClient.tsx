@@ -1,6 +1,5 @@
 ﻿"use client";
 
-import { format } from "date-fns";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -8,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { createBrowserClient } from "@/lib/supabase/client";
 import type { Booking, BookingStatus, ServiceItem } from "@/lib/types";
-import { bookingStats, serviceNames, statusClass, statusLabel } from "@/lib/utils";
+import { bookingStats, formatBangkokISODate, getBangkokMonthRange, serviceNames, statusClass, statusLabel } from "@/lib/utils";
 
 type Props = {
   initialBookings: Booking[];
@@ -22,12 +21,21 @@ export function DashboardClient({ initialBookings, services, shopId, demoMode = 
   const [bookings, setBookings] = useState(initialBookings);
   const [savingId, setSavingId] = useState<string | null>(null);
   const stats = bookingStats(bookings);
-  const today = format(new Date(), "yyyy-MM-dd");
+  const today = formatBangkokISODate();
   const todayBookings = bookings.filter((booking) => booking.booking_date === today).sort((a, b) => a.booking_time_start.localeCompare(b.booking_time_start));
 
   const reload = useCallback(async () => {
     if (!supabase) return;
-    const { data } = await supabase.schema("bike_booking").from("bookings").select("*").eq("shop_id", shopId).order("booking_date").returns<Booking[]>();
+    const { start, end } = getBangkokMonthRange();
+    const { data } = await supabase
+      .schema("bike_booking")
+      .from("bookings")
+      .select("*")
+      .eq("shop_id", shopId)
+      .gte("booking_date", start)
+      .lte("booking_date", end)
+      .order("booking_date")
+      .returns<Booking[]>();
     setBookings(data ?? []);
   }, [shopId, supabase]);
 

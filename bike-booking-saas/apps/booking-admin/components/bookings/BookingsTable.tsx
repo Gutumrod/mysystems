@@ -126,6 +126,12 @@ export function BookingsTable({ initialBookings, services, demoMode = false }: P
               <p className="text-lg font-semibold">{selected.customer_name}</p>
               <p className="text-muted-foreground">{selected.customer_phone}</p>
             </div>
+            <div className="rounded-md border bg-muted/40 p-3">
+              <p className="font-medium">วันที่ {selected.booking_date}</p>
+              <p className="text-muted-foreground">
+                เวลา {selected.booking_time_start.slice(0, 5)} - {selected.booking_time_end.slice(0, 5)} น.
+              </p>
+            </div>
             <p>รถ: {selected.bike_model} {selected.bike_year ?? ""}</p>
             <p>บริการ: {serviceNames(selected.service_items, services).join(", ")}</p>
             <p>หมายเหตุ: {selected.additional_notes || "-"}</p>

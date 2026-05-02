@@ -1,7 +1,7 @@
 ﻿import { DashboardClient } from "@/components/dashboard/DashboardClient";
 import { demoBookings, demoServices, hasSupabaseEnv } from "@/lib/mock-data";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { getShopId } from "@/lib/utils";
+import { getBangkokMonthRange, getShopId } from "@/lib/utils";
 import type { Booking, ServiceItem } from "@/lib/types";
 
 export default async function DashboardPage() {
@@ -11,8 +11,17 @@ export default async function DashboardPage() {
 
   const supabase = await createSupabaseServerClient();
   const shopId = getShopId();
+  const { start, end } = getBangkokMonthRange();
   const [{ data: bookings }, { data: services }] = await Promise.all([
-    supabase.schema("bike_booking").from("bookings").select("*").eq("shop_id", shopId).order("booking_date").returns<Booking[]>(),
+    supabase
+      .schema("bike_booking")
+      .from("bookings")
+      .select("*")
+      .eq("shop_id", shopId)
+      .gte("booking_date", start)
+      .lte("booking_date", end)
+      .order("booking_date")
+      .returns<Booking[]>(),
     supabase.schema("bike_booking").from("service_items").select("*").eq("shop_id", shopId).order("sort_order").returns<ServiceItem[]>()
   ]);
 

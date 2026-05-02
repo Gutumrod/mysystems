@@ -2,7 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { demoBookings, demoServices, hasSupabaseEnv } from "@/lib/mock-data";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { getShopId } from "@/lib/utils";
+import { getBangkokISODateOffset, getShopId } from "@/lib/utils";
 import type { Booking, ServiceItem } from "@/lib/types";
 
 export default async function CalendarPage() {
@@ -12,8 +12,17 @@ export default async function CalendarPage() {
 
   const supabase = await createSupabaseServerClient();
   const shopId = getShopId();
+  const start = getBangkokISODateOffset(-90);
+  const end = getBangkokISODateOffset(180);
   const [{ data: bookings }, { data: services }] = await Promise.all([
-    supabase.schema("bike_booking").from("bookings").select("*").eq("shop_id", shopId).returns<Booking[]>(),
+    supabase
+      .schema("bike_booking")
+      .from("bookings")
+      .select("*")
+      .eq("shop_id", shopId)
+      .gte("booking_date", start)
+      .lte("booking_date", end)
+      .returns<Booking[]>(),
     supabase.schema("bike_booking").from("service_items").select("*").eq("shop_id", shopId).returns<ServiceItem[]>()
   ]);
 
