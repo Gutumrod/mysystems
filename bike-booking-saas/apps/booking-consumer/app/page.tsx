@@ -1,13 +1,12 @@
-﻿import { addDays, format } from "date-fns";
+import { addDays } from "date-fns";
 import { headers } from "next/headers";
 import { AlertCircle } from "lucide-react";
 import { BookingForm } from "@/components/booking/BookingForm";
 import { Card, CardContent } from "@/components/ui/card";
 import { demoBookings, demoHolidays, demoServices, demoShop, hasSupabaseEnv } from "@/lib/mock-data";
-import { getShopId } from "@/lib/utils";
+import { formatBangkokISODate, getShopId } from "@/lib/utils";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { BookingSlot, ServiceItem, Shop, ShopHoliday } from "@/lib/types";
-import Link from "next/link";
 
 export default async function Page() {
   if (!hasSupabaseEnv()) {
@@ -15,8 +14,9 @@ export default async function Page() {
   }
 
   const supabase = await createSupabaseServerClient();
-  const today = format(new Date(), "yyyy-MM-dd");
-  const limit = format(addDays(new Date(), 45), "yyyy-MM-dd");
+  const now = new Date();
+  const today = formatBangkokISODate(now);
+  const limit = formatBangkokISODate(addDays(now, 45));
 
   // Read slug injected by middleware (production subdomain routing).
   // Falls back to NEXT_PUBLIC_SHOP_ID UUID in local development.
@@ -105,7 +105,7 @@ function BookingShell({
       </header>
 
       {/* Main content */}
-      <main className="pt-20 pb-28 px-4">
+      <main className="pt-20 px-4 pb-[calc(7rem+env(safe-area-inset-bottom,0px))]">
         <div className="mx-auto grid max-w-6xl gap-6 lg:grid-cols-[360px_1fr] lg:py-8">
 
           {/* Aside */}
@@ -169,7 +169,10 @@ function BookingShell({
       </main>
 
       {/* Fixed bottom nav */}
-      <nav className="fixed bottom-0 w-full rounded-t-3xl z-50 bg-zinc-900/80 backdrop-blur-2xl shadow-[0_-10px_30px_rgba(0,0,0,0.8)] flex justify-around items-center px-4 py-3 pb-6">
+      <nav
+        className="fixed bottom-0 w-full rounded-t-3xl z-50 bg-zinc-900/80 backdrop-blur-2xl shadow-[0_-10px_30px_rgba(0,0,0,0.8)] flex justify-around items-center px-4 py-3"
+        style={{ paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom, 0px))" }}
+      >
         <div className="flex items-center justify-center bg-[#69daff]/20 text-[#69daff] rounded-xl p-3 shadow-[inset_0_0_10px_rgba(105,218,255,0.2)]">
           <span
             className="material-symbols-outlined select-none"
@@ -178,9 +181,9 @@ function BookingShell({
             home_max
           </span>
         </div>
-        <Link href="/success" className="flex items-center justify-center text-zinc-700 p-3 rounded-xl hover:text-[#69daff] hover:bg-white/5 transition-all active:scale-90 duration-100">
+        <div className="flex items-center justify-center text-zinc-700 p-3 rounded-xl">
           <span className="material-symbols-outlined select-none">calendar_month</span>
-        </Link>
+        </div>
         <div className="flex items-center justify-center text-zinc-700 p-3 rounded-xl">
           <span className="material-symbols-outlined select-none">sports_motorsports</span>
         </div>
@@ -191,4 +194,3 @@ function BookingShell({
     </>
   );
 }
-

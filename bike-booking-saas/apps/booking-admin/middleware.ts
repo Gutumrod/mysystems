@@ -35,8 +35,20 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
 
   const isAuthRoute = request.nextUrl.pathname.startsWith('/login')
-  const isDashboardRoute = request.nextUrl.pathname.startsWith('/dashboard') ||
-    request.nextUrl.pathname === '/'
+  const isPlatformRoute = request.nextUrl.pathname.startsWith('/platform')
+  const isDashboardRoute = request.nextUrl.pathname.startsWith('/dashboard') || request.nextUrl.pathname === '/'
+
+  let isPlatformAdmin = false
+  if (user && isPlatformRoute) {
+    const { data: platformUser } = await supabase
+      .schema('bike_booking')
+      .from('platform_users')
+      .select('user_id')
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    isPlatformAdmin = Boolean(platformUser)
+  }
 
   if (!user && isDashboardRoute) {
     const url = request.nextUrl.clone()
@@ -44,9 +56,21 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  if (!user && isPlatformRoute) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/login'
+    return NextResponse.redirect(url)
+  }
+
+  if (user && isPlatformRoute && !isPlatformAdmin) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/unauthorized'
+    return NextResponse.redirect(url)
+  }
+
   if (user && isAuthRoute) {
     const url = request.nextUrl.clone()
-    url.pathname = '/dashboard'
+    url.pathname = '/'
     return NextResponse.redirect(url)
   }
 

@@ -1,5 +1,5 @@
 /* eslint-disable @next/next/no-page-custom-font */
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Manrope, Space_Grotesk } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
@@ -19,6 +19,10 @@ const manrope = Manrope({
 export const metadata: Metadata = {
   title: "Bike Booking",
   description: "จองคิวร้านมอเตอร์ไซค์ออนไลน์"
+};
+
+export const viewport: Viewport = {
+  viewportFit: "cover"
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

@@ -64,7 +64,9 @@ npm run dev:admin
 ## Notes
 
 - ระบบใช้ RLS แยกข้อมูลตามร้านผ่าน `shop_users`
+- โมเดลปัจจุบันล็อกให้ 1 ร้านมี owner ได้เพียง 1 บัญชี
 - Booking auto-confirm ทันที
 - Trigger ใน Postgres กันจองซ้ำและกันวันหยุด
 - Phase 1 ยังไม่มี LINE/Facebook API และ payment gateway
 - Phase ปัจจุบันใช้ `NEXT_PUBLIC_SHOP_ID` แบบต่อหนึ่ง deployment ต่อหนึ่งร้านอยู่ก่อน จนกว่าจะเปิดใช้ subdomain routing จริง
+- `booking-admin` มี route platform admin เริ่มต้นที่ `/platform` สำหรับคุมหลายร้าน

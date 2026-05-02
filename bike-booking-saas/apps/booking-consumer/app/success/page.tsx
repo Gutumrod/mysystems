@@ -1,4 +1,5 @@
-﻿import Link from "next/link";
+import Link from "next/link";
+import { headers } from "next/headers";
 import { format, parseISO } from "date-fns";
 import { CopyBookingButton } from "@/components/booking/CopyBookingButton";
 import { Button } from "@/components/ui/button";
@@ -8,26 +9,49 @@ import { bookingCopy, getShopId } from "@/lib/utils";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { BookingConfirmation, ServiceItem, Shop } from "@/lib/types";
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export default async function SuccessPage({ searchParams }: { searchParams: Promise<{ id?: string }> }) {
   const { id } = await searchParams;
+  const safeId = id && UUID_RE.test(id) ? id : undefined;
+
   if (!hasSupabaseEnv()) {
-    const booking = demoBookings.find((item) => item.id === id) ?? demoBookings[0];
+    const booking = demoBookings.find((item) => item.id === safeId) ?? demoBookings[0];
     const selectedNames = demoServices.filter((service) => booking.service_items.includes(service.id)).map((service) => service.name);
     return <SuccessShell shop={demoShop} booking={booking} serviceNames={selectedNames} />;
   }
 
   const supabase = await createSupabaseServerClient();
-  const shopId = getShopId();
+  const headersList = await headers();
+  const shopSlug = headersList.get("x-shop-slug");
 
-  const [{ data: shop }, { data: booking }, { data: services }] = await Promise.all([
-    supabase.schema("bike_booking").from("shops").select("*").eq("id", shopId).single<Shop>(),
-    id
+  const { data: shop } = shopSlug
+    ? await supabase.schema("bike_booking").from("shops").select("*").eq("slug", shopSlug).single<Shop>()
+    : await supabase.schema("bike_booking").from("shops").select("*").eq("id", getShopId()).single<Shop>();
+
+  if (!shop) {
+    return (
+      <main className="mx-auto flex min-h-screen max-w-xl items-center px-4">
+        <Card>
+          <CardContent className="p-5">
+            <h1 className="text-lg font-semibold">ไม่พบร้านค้า</h1>
+            <Link href="/">
+              <Button className="mt-4">กลับไปจองใหม่</Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </main>
+    );
+  }
+
+  const [{ data: booking }, { data: services }] = await Promise.all([
+    safeId
       ? supabase
           .schema("bike_booking")
-          .rpc("get_public_booking_confirmation", { target_booking_id: id, target_shop_id: shopId })
+          .rpc("get_public_booking_confirmation", { target_booking_id: safeId, target_shop_id: shop.id })
           .single<BookingConfirmation>()
       : Promise.resolve({ data: null }),
-    supabase.schema("bike_booking").from("service_items").select("*").eq("shop_id", shopId).returns<ServiceItem[]>()
+    supabase.schema("bike_booking").from("service_items").select("*").eq("shop_id", shop.id).returns<ServiceItem[]>()
   ]);
 
   if (!shop || !booking) {
@@ -89,7 +113,7 @@ function SuccessShell({ shop, booking, serviceNames }: { shop: Shop; booking: Bo
       </header>
 
       {/* Main scroll area */}
-      <main className="pt-24 pb-36 px-6 max-w-lg mx-auto overflow-x-hidden">
+      <main className="pt-24 px-6 max-w-lg mx-auto overflow-x-hidden pb-[calc(9rem+env(safe-area-inset-bottom,0px))]">
 
         {/* Hero SUCCESS section */}
         <section className="mb-8 relative">
@@ -129,7 +153,7 @@ function SuccessShell({ shop, booking, serviceNames }: { shop: Shop; booking: Bo
               </div>
               <div className="shrink-0 text-left sm:text-right">
                 <p className="text-[#adaaaa] text-xs uppercase tracking-wide mb-1">เวลา</p>
-                <p className="font-headline text-lg font-semibold">{booking.booking_time_start}</p>
+                <p className="font-headline text-lg font-semibold">{booking.booking_time_start.slice(0, 5)}</p>
               </div>
             </div>
 
@@ -197,7 +221,10 @@ function SuccessShell({ shop, booking, serviceNames }: { shop: Shop; booking: Bo
       </main>
 
       {/* Fixed bottom nav */}
-      <nav className="fixed bottom-0 w-full rounded-t-3xl z-50 bg-zinc-900/80 backdrop-blur-2xl shadow-[0_-10px_30px_rgba(0,0,0,0.8)] flex justify-around items-center px-4 py-3 pb-6">
+      <nav
+        className="fixed bottom-0 w-full rounded-t-3xl z-50 bg-zinc-900/80 backdrop-blur-2xl shadow-[0_-10px_30px_rgba(0,0,0,0.8)] flex justify-around items-center px-4 py-3"
+        style={{ paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom, 0px))" }}
+      >
         <Link
           href="/"
           className="flex items-center justify-center text-zinc-600 p-3 rounded-xl hover:text-[#69daff] hover:bg-white/5 transition-all active:scale-90 duration-100"

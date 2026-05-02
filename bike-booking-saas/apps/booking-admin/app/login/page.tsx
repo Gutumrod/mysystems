@@ -29,7 +29,7 @@ export default function LoginPage() {
     }
 
     await supabase.auth.getSession();
-    router.replace("/dashboard");
+    router.replace("/");
     router.refresh();
   }
 

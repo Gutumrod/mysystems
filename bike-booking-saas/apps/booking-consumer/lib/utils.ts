@@ -24,6 +24,10 @@ export function formatThaiDate(date: string | Date) {
   return format(parsed, "EEEE d MMMM yyyy", { locale: th });
 }
 
+export function formatBangkokISODate(date: Date) {
+  return date.toLocaleDateString("en-CA", { timeZone: "Asia/Bangkok" });
+}
+
 export function isClosedDate(shop: Shop, holidays: ShopHoliday[], date: Date) {
   const iso = format(date, "yyyy-MM-dd");
   const dayKey = toWeekdayKey(date);

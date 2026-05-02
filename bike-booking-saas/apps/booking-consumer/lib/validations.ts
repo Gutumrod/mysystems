@@ -2,7 +2,11 @@ import { z } from "zod";
 
 export const bookingSchema = z.object({
   customer_name: z.string().min(2, "กรุณากรอกชื่ออย่างน้อย 2 ตัวอักษร"),
-  customer_phone: z.string().regex(/^0[0-9]{9}$/, "เบอร์โทรต้องเป็นเลข 10 หลัก ขึ้นต้นด้วย 0"),
+  customer_phone: z
+    .string()
+    .min(1, "กรุณากรอกเบอร์โทร")
+    .transform((v) => v.replace(/\D/g, ""))
+    .pipe(z.string().regex(/^0[0-9]{9}$/, "เบอร์โทรต้องเป็นเลข 10 หลัก ขึ้นต้นด้วย 0")),
   customer_fb: z.string().optional(),
   customer_line_id: z.string().optional(),
   bike_model: z.string().min(2, "กรุณาเลือกรุ่นรถ"),

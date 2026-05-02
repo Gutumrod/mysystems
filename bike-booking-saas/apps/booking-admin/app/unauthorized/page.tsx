@@ -10,10 +10,10 @@ export default function UnauthorizedPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <ShieldAlert className="size-5 text-red-500" />
-            ไม่มีสิทธิ์เข้าร้านนี้
+            ไม่มีสิทธิ์เข้าถึงหน้านี้
           </CardTitle>
           <CardDescription>
-            บัญชีนี้ยังไม่ได้ถูกเพิ่มในรายชื่อผู้ดูแลร้าน กรุณาติดต่อเจ้าของระบบเพื่อผูกสิทธิ์ก่อนเข้าใช้งาน
+            บัญชีนี้ยังไม่ได้ถูกเพิ่มในรายชื่อผู้ดูแลที่มีสิทธิ์เข้าใช้งานหน้านี้ กรุณาติดต่อเจ้าของระบบเพื่อผูกสิทธิ์ก่อนเข้าใช้งาน
           </CardDescription>
         </CardHeader>
         <CardContent>

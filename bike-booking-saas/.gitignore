@@ -7,9 +7,12 @@ out
 npm-debug.log*
 
 # Dev artifacts
+.claude/
 logs/
 reports/
 do_move.bat
+supabase/.temp/
+supabase/backups/
 
 # Build artifacts
 tsconfig.tsbuildinfo
