@@ -1,6 +1,6 @@
 import { addHours, format, isBefore, isSameDay, parse, set } from "date-fns";
 import { th } from "date-fns/locale";
-import type { Booking, BookingSlot, ServiceItem, Shop, ShopHoliday, WeekdayKey } from "./types";
+import type { BookingConfirmation, BookingSlot, ServiceItem, Shop, ShopHoliday, WeekdayKey } from "./types";
 
 export function cn(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(" ");
@@ -76,7 +76,7 @@ export function buildTimeSlots(shop: Shop, date: string, durationHours: number, 
   return slots;
 }
 
-export function bookingCopy(shop: Shop, booking: Booking, serviceNames: string[]) {
+export function bookingCopy(shop: Shop, booking: BookingConfirmation, serviceNames: string[]) {
   const year = booking.bike_year ? ` (${booking.bike_year})` : "";
   const notes = booking.additional_notes?.trim() ? booking.additional_notes : "-";
   return [

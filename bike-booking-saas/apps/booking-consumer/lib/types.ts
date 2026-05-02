@@ -60,3 +60,18 @@ export type BookingSlot = Pick<
   Booking,
   "id" | "shop_id" | "booking_date" | "booking_time_start" | "booking_time_end" | "status"
 >;
+
+export type BookingConfirmation = Pick<
+  Booking,
+  | "id"
+  | "shop_id"
+  | "customer_name"
+  | "customer_phone"
+  | "booking_date"
+  | "booking_time_start"
+  | "booking_time_end"
+  | "bike_model"
+  | "bike_year"
+  | "service_items"
+  | "additional_notes"
+>;

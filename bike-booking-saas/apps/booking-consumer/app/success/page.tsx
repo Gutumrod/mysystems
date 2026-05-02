@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { demoBookings, demoServices, demoShop, hasSupabaseEnv } from "@/lib/mock-data";
 import { bookingCopy, getShopId } from "@/lib/utils";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import type { Booking, ServiceItem, Shop } from "@/lib/types";
+import type { BookingConfirmation, ServiceItem, Shop } from "@/lib/types";
 
 export default async function SuccessPage({ searchParams }: { searchParams: Promise<{ id?: string }> }) {
   const { id } = await searchParams;
@@ -21,7 +21,12 @@ export default async function SuccessPage({ searchParams }: { searchParams: Prom
 
   const [{ data: shop }, { data: booking }, { data: services }] = await Promise.all([
     supabase.schema("bike_booking").from("shops").select("*").eq("id", shopId).single<Shop>(),
-    id ? supabase.schema("bike_booking").from("bookings").select("*").eq("id", id).single<Booking>() : Promise.resolve({ data: null }),
+    id
+      ? supabase
+          .schema("bike_booking")
+          .rpc("get_public_booking_confirmation", { target_booking_id: id, target_shop_id: shopId })
+          .single<BookingConfirmation>()
+      : Promise.resolve({ data: null }),
     supabase.schema("bike_booking").from("service_items").select("*").eq("shop_id", shopId).returns<ServiceItem[]>()
   ]);
 
@@ -44,7 +49,7 @@ export default async function SuccessPage({ searchParams }: { searchParams: Prom
   return <SuccessShell shop={shop} booking={booking} serviceNames={selectedNames} />;
 }
 
-function SuccessShell({ shop, booking, serviceNames }: { shop: Shop; booking: Booking; serviceNames: string[] }) {
+function SuccessShell({ shop, booking, serviceNames }: { shop: Shop; booking: BookingConfirmation; serviceNames: string[] }) {
   const copyText = bookingCopy(shop, booking, serviceNames);
   const ticketId = `BK-${booking.id.slice(0, 8).toUpperCase()}`;
   const formattedDate = (() => {
