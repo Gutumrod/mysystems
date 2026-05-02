@@ -4,8 +4,8 @@
 
 ## โครงสร้าง
 
-- `shop-frontend` หน้า booking สำหรับลูกค้า
-- `shop-admin` หน้า admin สำหรับร้าน
+- `apps/booking-consumer` หน้า booking สำหรับลูกค้า
+- `apps/booking-admin` หน้า admin สำหรับร้าน
 - `supabase/migrations/initial.sql` schema, indexes, RLS, trigger กัน double booking
 - `supabase/seed.sql` ข้อมูลทดสอบ 2 ร้าน
 - `scripts/create-shop.sh` helper สำหรับเพิ่มร้าน
@@ -28,7 +28,7 @@ supabase db reset
 
 ## Environment
 
-สร้าง `.env.local` ใน `shop-frontend`:
+สร้าง `.env.local` ใน `apps/booking-consumer`:
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=
@@ -36,7 +36,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=
 NEXT_PUBLIC_SHOP_ID=11111111-1111-1111-1111-111111111111
 ```
 
-สร้าง `.env.local` ใน `shop-admin`:
+สร้าง `.env.local` ใน `apps/booking-admin`:
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=
@@ -57,9 +57,9 @@ npm run dev:admin
 ## Deploy
 
 1. Push repo ไป GitHub
-2. สร้าง Vercel project แยก 2 ตัว โดยตั้ง Root Directory เป็น `shop-frontend` และ `shop-admin`
+2. สร้าง Vercel project แยก 2 ตัว โดยตั้ง Root Directory เป็น `apps/booking-consumer` และ `apps/booking-admin`
 3. ใส่ environment variables ของแต่ละ project
-4. Deploy เป็น `shop-name.vercel.app` และ `shop-name-admin.vercel.app`
+4. Deploy เป็น `booking.craftbikelab.com` และ `booking-admin.craftbikelab.com` หรือโดเมน staging ที่ต้องการ
 
 ## Notes
 
@@ -67,3 +67,4 @@ npm run dev:admin
 - Booking auto-confirm ทันที
 - Trigger ใน Postgres กันจองซ้ำและกันวันหยุด
 - Phase 1 ยังไม่มี LINE/Facebook API และ payment gateway
+- Phase ปัจจุบันใช้ `NEXT_PUBLIC_SHOP_ID` แบบต่อหนึ่ง deployment ต่อหนึ่งร้านอยู่ก่อน จนกว่าจะเปิดใช้ subdomain routing จริง

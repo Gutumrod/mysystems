@@ -240,3 +240,57 @@ Shop `f9080dd8-9070-473c-9ff9-8e8a636bbdec` ยังมีชื่อ placehol
 | SESSION_NOTES_V10.md | ✅ อัปเดตสมบูรณ์ |
 
 Phase 4 โค้ดฝั่ง repository เสร็จสมบูรณ์ทั้งหมด เหลือเฉพาะ DNS + Supabase auth redirect URL + ใส่ข้อมูลร้านจริง
+<<<<<<< Updated upstream
+=======
+
+---
+
+## V10 Continuation — Local Sync & Reality Check
+
+วันที่ต่อเนื่อง: 2 พฤษภาคม 2026
+
+### สิ่งที่ตรวจเพิ่ม
+
+- เช็กว่า local folder `bike-booking-saas` ยังไม่ตรงกับ `origin/main` 100%
+- แยกได้ว่าไฟล์ที่ควรตาม GitHub คือ:
+  - `SESSION_NOTES_V10.md`
+  - `apps/booking-consumer/lib/supabase/server.ts`
+  - `apps/booking-consumer/middleware.ts`
+- ส่วนไฟล์ที่ควรเก็บ local work ไว้ก่อน:
+  - `DEPLOY_PLAN.md`
+  - `README.md`
+  - `apps/booking-consumer/.env.production.example`
+  - `package-lock.json`
+  - `SESSION_NOTES_V8.md`
+  - `SESSION_NOTES_V9.md`
+
+### สิ่งที่ทำเพิ่ม
+
+1. sync local ให้ตาม `origin/main` เฉพาะ 3 ไฟล์ที่ควรตาม GitHub
+2. อัปเดต `DEPLOY_PLAN.md` ให้ตรงสถานะจริงปัจจุบัน:
+   - Vercel projects ถูกสร้างแล้ว
+   - custom domains เปิดได้แล้ว
+   - consumer มี middleware จริง
+   - `outputFileTracingRoot` ที่ใช้งานจริงคือ `../../..`
+3. รัน Supabase advisors เพิ่ม
+
+### ผลที่พบจาก advisors
+
+ยังมี hardening/performance backlog ที่ควรเก็บก่อน go-live:
+
+- `SECURITY DEFINER` view: `bike_booking.public_booking_slots`
+- exposed `SECURITY DEFINER` functions หลายตัวใน schema `bike_booking`
+- leaked password protection ยังปิดอยู่
+- `shop_users.user_id` ยังไม่มี covering index
+- RLS perf warnings หลายจุด
+
+### สรุปต่อจาก V10
+
+ระบบ production ตอนนี้ "เปิดใช้ URL ได้จริง" แล้ว  
+แต่ถ้าจะเรียกว่า go-live แข็งแรง ควรมี Phase ถัดไปสำหรับ:
+
+- auth hardening
+- function/view privilege hardening
+- RLS/performance cleanup
+- final production E2E
+>>>>>>> Stashed changes

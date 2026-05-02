@@ -67,6 +67,7 @@ export function buildTimeSlots(shop: Shop, date: string, durationHours: number, 
     const end = format(addHours(cursor, durationHours), "HH:mm");
     const available = !bookings.some((booking) => {
       if (!["confirmed", "in_progress"].includes(booking.status)) return false;
+      if (booking.booking_date !== date) return false;
       return start < booking.booking_time_end.slice(0, 5) && end > booking.booking_time_start.slice(0, 5);
     });
     slots.push({ start, end, available });

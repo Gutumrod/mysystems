@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2 } from "lucide-react";
+import { AlertCircle, Loader2 } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -165,37 +165,49 @@ export function BookingForm({ shop, services, holidays, bookings, demoMode = fal
 
             <Field>
               <FieldLabel>บริการ *</FieldLabel>
-              <div className="grid gap-2 sm:grid-cols-2">
-                {services.map((service) => {
-                  const checked = selectedServices.includes(service.id);
-                  return (
-                    <label
-                      key={service.id}
-                      className={cn(
-                        "flex min-h-14 cursor-pointer items-center gap-3 rounded border border-white/10 bg-[#131313] px-3 text-sm transition hover:border-[#69daff]/30",
-                        checked && "border-[#69daff]/50 bg-[#69daff]/10"
-                      )}
-                    >
-                      <input
-                        type="checkbox"
-                        className="size-4"
-                        checked={checked}
-                        onChange={(event) => {
-                          const next = event.target.checked
-                            ? [...selectedServices, service.id]
-                            : selectedServices.filter((id) => id !== service.id);
-                          setValue("service_items", next, { shouldValidate: true });
-                          setValue("booking_time_start", "");
-                        }}
-                      />
-                      <span className="flex flex-col">
-                        <span className="font-medium">{service.name}</span>
-                        <span className="text-xs text-muted-foreground">{service.duration_hours} ชั่วโมง</span>
-                      </span>
-                    </label>
-                  );
-                })}
-              </div>
+              {services.length === 0 ? (
+                <div className="rounded border border-[#ff7350]/30 bg-[#ff7350]/10 px-4 py-3 text-sm text-[#ffd7ce]">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="mt-0.5 size-4 shrink-0 text-[#ff7350]" />
+                    <div>
+                      <p className="font-medium text-white">ยังไม่มีบริการให้เลือก</p>
+                      <p className="mt-1 text-xs text-[#ffd7ce]/90">กรุณาติดต่อร้าน หรือกลับมาอีกครั้งหลังร้านเพิ่มรายการบริการในระบบ</p>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {services.map((service) => {
+                    const checked = selectedServices.includes(service.id);
+                    return (
+                      <label
+                        key={service.id}
+                        className={cn(
+                          "flex min-h-14 cursor-pointer items-center gap-3 rounded border border-white/10 bg-[#131313] px-3 text-sm transition hover:border-[#69daff]/30",
+                          checked && "border-[#69daff]/50 bg-[#69daff]/10"
+                        )}
+                      >
+                        <input
+                          type="checkbox"
+                          className="size-4"
+                          checked={checked}
+                          onChange={(event) => {
+                            const next = event.target.checked
+                              ? [...selectedServices, service.id]
+                              : selectedServices.filter((id) => id !== service.id);
+                            setValue("service_items", next, { shouldValidate: true });
+                            setValue("booking_time_start", "");
+                          }}
+                        />
+                        <span className="flex flex-col">
+                          <span className="font-medium">{service.name}</span>
+                          <span className="text-xs text-muted-foreground">{service.duration_hours} ชั่วโมง</span>
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
               <FieldError>{errors.service_items?.message}</FieldError>
             </Field>
 
