@@ -51,6 +51,43 @@ export function calculateEndTime(date: string, start: string, durationHours: num
   return format(addHours(startDate, Math.max(durationHours, 1)), "HH:mm");
 }
 
+function normalizedCapacity(value: number | undefined, fallback: number, minimum: number) {
+  const parsed = Number(value ?? fallback);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.max(minimum, Math.floor(parsed));
+}
+
+function isDailyWorkloadStatus(status: BookingSlot["status"]) {
+  return !["cancelled", "no_show"].includes(status);
+}
+
+function isSlotWorkloadStatus(status: BookingSlot["status"]) {
+  return ["confirmed", "in_progress"].includes(status);
+}
+
+function timePart(value: string) {
+  return value.slice(0, 5);
+}
+
+function hasCapacityAcrossWindow(date: string, startAt: Date, endAt: Date, slotCapacity: number, bookings: BookingSlot[]) {
+  let segmentStart = startAt;
+
+  while (segmentStart < endAt) {
+    const segmentEnd = addHours(segmentStart, 1) < endAt ? addHours(segmentStart, 1) : endAt;
+    const segmentStartText = format(segmentStart, "HH:mm");
+    const segmentEndText = format(segmentEnd, "HH:mm");
+    const overlapCount = bookings.filter((booking) => {
+      if (booking.booking_date !== date || !isSlotWorkloadStatus(booking.status)) return false;
+      return segmentStartText < timePart(booking.booking_time_end) && segmentEndText > timePart(booking.booking_time_start);
+    }).length;
+
+    if (overlapCount >= slotCapacity) return false;
+    segmentStart = segmentEnd;
+  }
+
+  return true;
+}
+
 export function buildTimeSlots(shop: Shop, date: string, durationHours: number, bookings: BookingSlot[]) {
   const dateObj = parse(date, "yyyy-MM-dd", new Date());
   const day = shop.working_hours[toWeekdayKey(dateObj)];
@@ -58,22 +95,24 @@ export function buildTimeSlots(shop: Shop, date: string, durationHours: number, 
 
   const slots: Array<{ start: string; end: string; available: boolean }> = [];
   const now = new Date();
+  const duration = Math.max(durationHours, 1);
+  const slotCapacity = normalizedCapacity(day.slot_capacity, 1, 1);
+  const dailyLimit = normalizedCapacity(day.daily_limit, 0, 0);
+  const dailyBookingCount = bookings.filter((booking) => booking.booking_date === date && isDailyWorkloadStatus(booking.status)).length;
+  const hasDailyCapacity = dailyLimit === 0 || dailyBookingCount < dailyLimit;
   let cursor = parse(`${date} ${day.start}`, "yyyy-MM-dd HH:mm", new Date());
   const close = parse(`${date} ${day.end}`, "yyyy-MM-dd HH:mm", new Date());
 
-  while (addHours(cursor, durationHours) <= close) {
+  while (addHours(cursor, duration) <= close) {
     if (isSameDay(dateObj, now) && cursor <= now) {
       cursor = addHours(cursor, 1);
       continue;
     }
 
     const start = format(cursor, "HH:mm");
-    const end = format(addHours(cursor, durationHours), "HH:mm");
-    const available = !bookings.some((booking) => {
-      if (!["confirmed", "in_progress"].includes(booking.status)) return false;
-      if (booking.booking_date !== date) return false;
-      return start < booking.booking_time_end.slice(0, 5) && end > booking.booking_time_start.slice(0, 5);
-    });
+    const endAt = addHours(cursor, duration);
+    const end = format(endAt, "HH:mm");
+    const available = hasDailyCapacity && hasCapacityAcrossWindow(date, cursor, endAt, slotCapacity, bookings);
     slots.push({ start, end, available });
     cursor = addHours(cursor, 1);
   }

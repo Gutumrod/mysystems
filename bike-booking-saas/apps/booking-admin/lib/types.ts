@@ -4,6 +4,8 @@ export type WorkingDay = {
   enabled: boolean;
   start: string;
   end: string;
+  slot_capacity: number;
+  daily_limit: number;
 };
 
 export type WorkingHours = Record<WeekdayKey, WorkingDay>;

@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { createBrowserClient } from "@/lib/supabase/client";
-import type { Shop, ShopHoliday, WeekdayKey, WorkingHours } from "@/lib/types";
+import type { Shop, ShopHoliday, WeekdayKey, WorkingDay, WorkingHours } from "@/lib/types";
 
 const days: Array<{ key: WeekdayKey; label: string }> = [
   { key: "mon", label: "จันทร์" },
@@ -20,9 +20,29 @@ const days: Array<{ key: WeekdayKey; label: string }> = [
   { key: "sun", label: "อาทิตย์" }
 ];
 
+function sanitizeCapacity(value: number | undefined, fallback: number, minimum: number) {
+  const parsed = Number(value ?? fallback);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.max(minimum, Math.floor(parsed));
+}
+
+function normalizeWorkingDay(day?: Partial<WorkingDay>): WorkingDay {
+  return {
+    enabled: day?.enabled ?? false,
+    start: day?.start || "09:00",
+    end: day?.end || "18:00",
+    slot_capacity: sanitizeCapacity(day?.slot_capacity, 1, 1),
+    daily_limit: sanitizeCapacity(day?.daily_limit, 0, 0)
+  };
+}
+
+function normalizeWorkingHours(input: WorkingHours): WorkingHours {
+  return Object.fromEntries(days.map((day) => [day.key, normalizeWorkingDay(input[day.key])])) as WorkingHours;
+}
+
 export function ScheduleSettings({ shop, initialHolidays, demoMode = false }: { shop: Shop; initialHolidays: ShopHoliday[]; demoMode?: boolean }) {
   const supabase = useMemo(() => (demoMode ? null : createBrowserClient()), [demoMode]);
-  const [hours, setHours] = useState<WorkingHours>(shop.working_hours);
+  const [hours, setHours] = useState<WorkingHours>(() => normalizeWorkingHours(shop.working_hours));
   const [holidays, setHolidays] = useState(initialHolidays);
   const [holidayDate, setHolidayDate] = useState("");
   const [reason, setReason] = useState("");
@@ -30,21 +50,31 @@ export function ScheduleSettings({ shop, initialHolidays, demoMode = false }: { 
   const [isAddingHoliday, setIsAddingHoliday] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
+  function updateDay(dayKey: WeekdayKey, patch: Partial<WorkingDay>) {
+    setHours((current) => ({
+      ...current,
+      [dayKey]: normalizeWorkingDay({ ...current[dayKey], ...patch })
+    }));
+  }
+
   async function saveHours() {
     if (isSavingHours) return;
     setIsSavingHours(true);
-    const regular_holidays = days.filter((day) => !hours[day.key].enabled).map((day) => day.key);
+    const nextHours = normalizeWorkingHours(hours);
+    const regular_holidays = days.filter((day) => !nextHours[day.key].enabled).map((day) => day.key);
     if (!supabase) {
+      setHours(nextHours);
       toast.success("บันทึกเวลาทำการแล้ว (โหมดตัวอย่าง)");
       setIsSavingHours(false);
       return;
     }
-    const { error } = await supabase.schema("bike_booking").from("shops").update({ working_hours: hours, regular_holidays }).eq("id", shop.id);
+    const { error } = await supabase.schema("bike_booking").from("shops").update({ working_hours: nextHours, regular_holidays }).eq("id", shop.id);
     setIsSavingHours(false);
     if (error) {
       toast.error(error.message);
       return;
     }
+    setHours(nextHours);
     toast.success("บันทึกเวลาทำการแล้ว");
   }
 
@@ -94,19 +124,46 @@ export function ScheduleSettings({ shop, initialHolidays, demoMode = false }: { 
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
           {days.map((day) => (
-            <div key={day.key} className="grid gap-3 rounded-md border bg-muted/40 p-3 sm:grid-cols-[110px_1fr_1fr] sm:items-center">
+            <div key={day.key} className="grid gap-3 rounded-md border bg-muted/40 p-3 sm:grid-cols-[100px_1fr_1fr_145px_145px] sm:items-end">
               <label className="flex items-center gap-2 text-sm font-medium">
                 <input
                   type="checkbox"
                   checked={hours[day.key].enabled}
-                  onChange={(event) => setHours({ ...hours, [day.key]: { ...hours[day.key], enabled: event.target.checked } })}
+                  onChange={(event) => updateDay(day.key, { enabled: event.target.checked })}
                 />
                 {day.label}
               </label>
-              <Input type="time" value={hours[day.key].start} onChange={(event) => setHours({ ...hours, [day.key]: { ...hours[day.key], start: event.target.value } })} />
-              <Input type="time" value={hours[day.key].end} onChange={(event) => setHours({ ...hours, [day.key]: { ...hours[day.key], end: event.target.value } })} />
+              <Field>
+                <FieldLabel>เปิด</FieldLabel>
+                <Input type="time" value={hours[day.key].start} onChange={(event) => updateDay(day.key, { start: event.target.value })} />
+              </Field>
+              <Field>
+                <FieldLabel>ปิด</FieldLabel>
+                <Input type="time" value={hours[day.key].end} onChange={(event) => updateDay(day.key, { end: event.target.value })} />
+              </Field>
+              <Field>
+                <FieldLabel>รับพร้อมกัน</FieldLabel>
+                <Input
+                  type="number"
+                  min={1}
+                  inputMode="numeric"
+                  value={hours[day.key].slot_capacity}
+                  onChange={(event) => updateDay(day.key, { slot_capacity: Number(event.target.value) })}
+                />
+              </Field>
+              <Field>
+                <FieldLabel>จำกัด/วัน</FieldLabel>
+                <Input
+                  type="number"
+                  min={0}
+                  inputMode="numeric"
+                  value={hours[day.key].daily_limit}
+                  onChange={(event) => updateDay(day.key, { daily_limit: Number(event.target.value) })}
+                />
+              </Field>
             </div>
           ))}
+          <p className="text-sm text-muted-foreground">รับพร้อมกัน = จำนวนคิวที่รับซ้อนในช่วงเวลาเดียวกัน, จำกัด/วัน ใส่ 0 คือไม่จำกัด</p>
           <Button disabled={isSavingHours} onClick={saveHours}>บันทึกเวลาทำการ</Button>
         </CardContent>
       </Card>

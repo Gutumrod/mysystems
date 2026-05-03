@@ -10,13 +10,13 @@ export const demoShop: Shop = {
   subscription_status: "active",
   regular_holidays: ["sun"],
   working_hours: {
-    mon: { enabled: true, start: "09:00", end: "18:00" },
-    tue: { enabled: true, start: "09:00", end: "18:00" },
-    wed: { enabled: true, start: "09:00", end: "18:00" },
-    thu: { enabled: true, start: "09:00", end: "18:00" },
-    fri: { enabled: true, start: "09:00", end: "18:00" },
-    sat: { enabled: true, start: "09:00", end: "17:00" },
-    sun: { enabled: false, start: "09:00", end: "17:00" }
+    mon: { enabled: true, start: "09:00", end: "18:00", slot_capacity: 1, daily_limit: 0 },
+    tue: { enabled: true, start: "09:00", end: "18:00", slot_capacity: 1, daily_limit: 0 },
+    wed: { enabled: true, start: "09:00", end: "18:00", slot_capacity: 1, daily_limit: 0 },
+    thu: { enabled: true, start: "09:00", end: "18:00", slot_capacity: 1, daily_limit: 0 },
+    fri: { enabled: true, start: "09:00", end: "18:00", slot_capacity: 1, daily_limit: 0 },
+    sat: { enabled: true, start: "09:00", end: "17:00", slot_capacity: 1, daily_limit: 0 },
+    sun: { enabled: false, start: "09:00", end: "17:00", slot_capacity: 1, daily_limit: 0 }
   }
 };
 
