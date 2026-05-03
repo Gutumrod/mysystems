@@ -4,6 +4,8 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getShopId } from "@/lib/utils";
 import type { ServiceItem } from "@/lib/types";
 
+export const dynamic = "force-dynamic";
+
 export default async function ServicesPage() {
   if (!hasSupabaseEnv()) {
     return <ServicesShell services={demoServices} shopId={getShopId()} demoMode />;

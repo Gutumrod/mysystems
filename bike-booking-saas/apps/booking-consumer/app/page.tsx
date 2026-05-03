@@ -8,6 +8,8 @@ import { formatBangkokISODate, getShopId } from "@/lib/utils";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { BookingSlot, ServiceItem, Shop, ShopHoliday } from "@/lib/types";
 
+export const dynamic = "force-dynamic";
+
 export default async function Page() {
   if (!hasSupabaseEnv()) {
     return <BookingShell shop={demoShop} services={demoServices} holidays={demoHolidays} bookings={demoBookings} demoMode />;

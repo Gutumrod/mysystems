@@ -4,6 +4,8 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getBangkokMonthRange, getShopId } from "@/lib/utils";
 import type { Booking, ServiceItem } from "@/lib/types";
 
+export const dynamic = "force-dynamic";
+
 export default async function DashboardPage() {
   if (!hasSupabaseEnv()) {
     return <DashboardClient initialBookings={demoBookings} services={demoServices} shopId={getShopId()} demoMode />;

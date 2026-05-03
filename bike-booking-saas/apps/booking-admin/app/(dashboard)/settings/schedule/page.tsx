@@ -6,6 +6,8 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getShopId } from "@/lib/utils";
 import type { Shop, ShopHoliday } from "@/lib/types";
 
+export const dynamic = "force-dynamic";
+
 export default async function SchedulePage() {
   if (!hasSupabaseEnv()) {
     return <ScheduleShell shop={demoShop} holidays={demoHolidays} demoMode />;

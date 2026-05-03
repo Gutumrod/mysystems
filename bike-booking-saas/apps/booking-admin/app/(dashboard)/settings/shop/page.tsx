@@ -6,6 +6,8 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getShopId } from "@/lib/utils";
 import type { Shop } from "@/lib/types";
 
+export const dynamic = "force-dynamic";
+
 export default async function ShopSettingsPage() {
   if (!hasSupabaseEnv()) {
     return <ShopSettingsShell shop={demoShop} demoMode />;

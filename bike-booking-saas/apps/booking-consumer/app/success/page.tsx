@@ -11,6 +11,8 @@ import type { BookingConfirmation, ServiceItem, Shop } from "@/lib/types";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+export const dynamic = "force-dynamic";
+
 export default async function SuccessPage({ searchParams }: { searchParams: Promise<{ id?: string }> }) {
   const { id } = await searchParams;
   const safeId = id && UUID_RE.test(id) ? id : undefined;

@@ -5,6 +5,8 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getBangkokISODateOffset, getShopId } from "@/lib/utils";
 import type { Booking, ServiceItem } from "@/lib/types";
 
+export const dynamic = "force-dynamic";
+
 export default async function BookingsPage() {
   if (!hasSupabaseEnv()) {
     return <BookingsShell bookings={demoBookings} services={demoServices} demoMode />;

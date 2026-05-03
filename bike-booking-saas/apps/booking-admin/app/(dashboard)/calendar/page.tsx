@@ -5,15 +5,17 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getBangkokISODateOffset, getShopId } from "@/lib/utils";
 import type { Booking, ServiceItem } from "@/lib/types";
 
+export const dynamic = "force-dynamic";
+
 export default async function CalendarPage() {
   if (!hasSupabaseEnv()) {
-    return <CalendarShell bookings={demoBookings} services={demoServices} />;
+    return <CalendarShell bookings={demoBookings} services={demoServices} shopId={getShopId()} demoMode />;
   }
 
   const supabase = await createSupabaseServerClient();
   const shopId = getShopId();
-  const start = getBangkokISODateOffset(-90);
-  const end = getBangkokISODateOffset(180);
+  const start = getBangkokISODateOffset(-180);
+  const end = getBangkokISODateOffset(365);
   const [{ data: bookings }, { data: services }] = await Promise.all([
     supabase
       .schema("bike_booking")
@@ -22,14 +24,26 @@ export default async function CalendarPage() {
       .eq("shop_id", shopId)
       .gte("booking_date", start)
       .lte("booking_date", end)
+      .order("booking_date")
+      .limit(500)
       .returns<Booking[]>(),
     supabase.schema("bike_booking").from("service_items").select("*").eq("shop_id", shopId).returns<ServiceItem[]>()
   ]);
 
-  return <CalendarShell bookings={bookings ?? []} services={services ?? []} />;
+  return <CalendarShell bookings={bookings ?? []} services={services ?? []} shopId={shopId} />;
 }
 
-function CalendarShell({ bookings, services }: { bookings: Booking[]; services: ServiceItem[] }) {
+function CalendarShell({
+  bookings,
+  services,
+  shopId,
+  demoMode = false
+}: {
+  bookings: Booking[];
+  services: ServiceItem[];
+  shopId: string;
+  demoMode?: boolean;
+}) {
   return (
     <div className="flex flex-col gap-5">
       <div>
@@ -41,7 +55,7 @@ function CalendarShell({ bookings, services }: { bookings: Booking[]; services: 
           <CardTitle>ตารางคิว</CardTitle>
         </CardHeader>
         <CardContent>
-          <BookingCalendar bookings={bookings} services={services} />
+          <BookingCalendar initialBookings={bookings} services={services} shopId={shopId} demoMode={demoMode} />
         </CardContent>
       </Card>
     </div>
