@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { CalendarDays, ClipboardList, LayoutDashboard, Settings, Wrench } from "lucide-react";
+import { CalendarCheck, CalendarDays, ClipboardList, LayoutDashboard, Settings, Wrench } from "lucide-react";
 import { hasSupabaseEnv } from "@/lib/mock-data";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getShopId } from "@/lib/utils";
 
 const nav = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/today", label: "งานวันนี้", icon: CalendarCheck },
   { href: "/calendar", label: "ปฏิทิน", icon: CalendarDays },
   { href: "/bookings", label: "การจอง", icon: ClipboardList },
   { href: "/services", label: "บริการ", icon: Wrench },
