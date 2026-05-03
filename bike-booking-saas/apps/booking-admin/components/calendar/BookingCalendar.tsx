@@ -2,7 +2,7 @@
 
 import { format, parse, startOfWeek } from "date-fns";
 import { th } from "date-fns/locale";
-import { dateFnsLocalizer, Calendar, type EventProps } from "react-big-calendar";
+import { dateFnsLocalizer, Calendar, Views, type EventProps, type View } from "react-big-calendar";
 import { useState } from "react";
 import { Dialog } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
@@ -26,6 +26,8 @@ type CalendarEvent = {
 
 export function BookingCalendar({ bookings, services }: { bookings: Booking[]; services: ServiceItem[] }) {
   const [selected, setSelected] = useState<Booking | null>(null);
+  const [date, setDate] = useState(new Date());
+  const [view, setView] = useState<View>(Views.MONTH);
   const events = bookings.map((booking) => ({
     title: `${booking.customer_name} · ${booking.bike_model}`,
     start: parse(`${booking.booking_date} ${booking.booking_time_start.slice(0, 5)}`, "yyyy-MM-dd HH:mm", new Date()),
@@ -38,10 +40,22 @@ export function BookingCalendar({ bookings, services }: { bookings: Booking[]; s
       <Calendar
         culture="th"
         localizer={localizer}
+        date={date}
+        view={view}
+        onNavigate={setDate}
+        onView={setView}
         events={events}
         startAccessor="start"
         endAccessor="end"
         views={["month", "week", "day"]}
+        messages={{
+          today: "วันนี้",
+          previous: "ก่อนหน้า",
+          next: "ถัดไป",
+          month: "เดือน",
+          week: "สัปดาห์",
+          day: "วัน"
+        }}
         onSelectEvent={(event) => setSelected(event.booking)}
         components={{ event: EventComponent }}
         eventPropGetter={(event) => ({

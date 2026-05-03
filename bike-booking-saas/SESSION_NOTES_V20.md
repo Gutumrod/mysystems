@@ -23,6 +23,7 @@
 แก้แล้ว:
 
 - Calendar localizer ใช้ `startOfWeek` จาก `date-fns` จริง
+- Calendar ถูกปรับเป็น controlled component โดยคุม `date/view` เอง เพื่อให้ปุ่มก่อนหน้า/ถัดไป/เดือน/สัปดาห์/วันทำงานนิ่งขึ้น
 - Middleware ครอบ route หลังบ้านร้านให้ครบ:
   - `/dashboard`
   - `/bookings`
@@ -86,6 +87,11 @@ Apply เข้า Supabase production แล้ว และ mark migration his
   - `/settings/shop`
   - `/settings/schedule`
 - Calendar กด Week view แล้วไม่มี runtime error
+- หลัง restart dev server ทดสอบ Calendar control ผ่าน:
+  - `ถัดไป` เปลี่ยนเดือน
+  - `สัปดาห์` เปลี่ยน view
+  - `ก่อนหน้า` ถอยช่วงวันที่
+  - `เดือน` กลับ month view
 - Shop settings validation ชื่อร้านว่างขึ้น toast `กรุณากรอกชื่อร้าน`
 - Middleware no-cookie redirect route หลังบ้านร้านทั้งหมดไป `/login`
 
@@ -98,6 +104,7 @@ Production DB verify:
 
 - ยังไม่ได้ commit/push งาน V20
 - ยังไม่ได้ทดสอบ action ที่เขียน DB จริง เช่น แก้ service, ลบ service, บันทึก setting จริง เพื่อเลี่ยงการเปลี่ยนข้อมูล production ระหว่าง smoke test
+- ระหว่างทดสอบพบ dev server/HMR ค้างหลัง build ทำให้ Calendar control ไม่ตอบสนอง ต้อง restart dev server ก่อน verify
 - Platform admin DB migration ยังไม่ได้ apply production จริง ต้องตัดสินใจแยกก่อนเปิดใช้ platform admin
 - Service reorder ยังใช้หลาย request อยู่ ควรทำ RPC transaction ภายหลัง
 - ยังไม่ได้ทำหน้า “งานวันนี้” สำหรับใช้หน้าร้านจริง
