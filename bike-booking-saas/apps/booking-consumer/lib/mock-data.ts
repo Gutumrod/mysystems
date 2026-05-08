@@ -21,9 +21,36 @@ export const demoShop: Shop = {
 };
 
 export const demoServices: ServiceItem[] = [
-  { id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", shop_id: demoShop.id, name: "เปลี่ยนน้ำมันเครื่อง", duration_hours: 1, is_active: true, sort_order: 1 },
-  { id: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", shop_id: demoShop.id, name: "เช็คระยะทั่วไป", duration_hours: 2, is_active: true, sort_order: 2 },
-  { id: "cccccccc-cccc-cccc-cccc-cccccccccccc", shop_id: demoShop.id, name: "ติดตั้งของแต่ง", duration_hours: 3, is_active: true, sort_order: 3 }
+  {
+    id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    shop_id: demoShop.id,
+    name: "เปลี่ยนน้ำมันเครื่อง",
+    duration_unit: "hour",
+    duration_value: 1,
+    duration_hours: 1,
+    is_active: true,
+    sort_order: 1
+  },
+  {
+    id: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+    shop_id: demoShop.id,
+    name: "เช็คระยะทั่วไป",
+    duration_unit: "hour",
+    duration_value: 2,
+    duration_hours: 2,
+    is_active: true,
+    sort_order: 2
+  },
+  {
+    id: "cccccccc-cccc-cccc-cccc-cccccccccccc",
+    shop_id: demoShop.id,
+    name: "ฝากรถค้าง",
+    duration_unit: "day",
+    duration_value: 1,
+    duration_hours: 1,
+    is_active: true,
+    sort_order: 3
+  }
 ];
 
 export const demoHolidays: ShopHoliday[] = [];
@@ -37,6 +64,8 @@ export const demoBookings: Booking[] = [
     customer_fb: null,
     customer_line_id: "@somchai",
     booking_date: new Date().toISOString().slice(0, 10),
+    booking_end_date: null,
+    booking_kind: "hourly",
     booking_time_start: "10:00",
     booking_time_end: "12:00",
     bike_model: "Honda Click 160",
@@ -44,6 +73,7 @@ export const demoBookings: Booking[] = [
     service_items: [demoServices[1].id],
     additional_notes: "มีเสียงดังช่วงออกตัว",
     status: "confirmed",
+    customer_showed_up: null,
     created_at: new Date().toISOString()
   }
 ];

@@ -2,8 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CalendarCheck, CalendarDays, ClipboardList, LayoutDashboard, Settings, Wrench } from "lucide-react";
 import { hasSupabaseEnv } from "@/lib/mock-data";
+import { getTenantShopContext } from "@/lib/tenant";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { getShopId } from "@/lib/utils";
 
 const nav = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -20,11 +20,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
     const { data } = await supabase.auth.getUser();
     if (!data.user) redirect("/login");
 
+    const { shopId } = await getTenantShopContext(supabase);
+    if (!shopId) redirect("/unauthorized");
+
     const { data: membership } = await supabase
       .schema("bike_booking")
       .from("shop_users")
       .select("shop_id")
-      .eq("shop_id", getShopId())
+      .eq("shop_id", shopId)
       .eq("user_id", data.user.id)
       .maybeSingle();
 

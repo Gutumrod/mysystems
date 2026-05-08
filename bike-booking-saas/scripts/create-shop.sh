@@ -11,11 +11,11 @@ NAME="$2"
 PHONE="$3"
 
 cat <<SQL
-insert into public.shops (slug, name, phone, subscription_status)
+insert into bike_booking.shops (slug, name, phone, subscription_status)
 values ('$SLUG', '$NAME', '$PHONE', 'trial')
 returning id, slug, name;
 
 -- After creating the auth user, connect owner:
--- insert into public.shop_users (shop_id, user_id, role)
+-- insert into bike_booking.shop_users (shop_id, user_id, role)
 -- values ('<SHOP_ID>', '<AUTH_USER_ID>', 'owner');
 SQL

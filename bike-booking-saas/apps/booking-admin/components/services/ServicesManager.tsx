@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { createBrowserClient } from "@/lib/supabase/client";
-import type { ServiceItem } from "@/lib/types";
+import type { ServiceDurationUnit, ServiceItem } from "@/lib/types";
 
 type Props = {
   initialServices: ServiceItem[];
@@ -21,12 +21,18 @@ export function ServicesManager({ initialServices, shopId, demoMode = false }: P
   const supabase = useMemo(() => (demoMode ? null : createBrowserClient()), [demoMode]);
   const [services, setServices] = useState(initialServices);
   const [name, setName] = useState("");
-  const [duration, setDuration] = useState(1);
+  const [durationUnit, setDurationUnit] = useState<ServiceDurationUnit>("hour");
+  const [durationValue, setDurationValue] = useState(1);
   const [saving, setSaving] = useState(false);
+
+  function toDurationHours(unit: ServiceDurationUnit, value: number) {
+    return unit === "day" ? 1 : value;
+  }
 
   async function addService() {
     if (!name.trim()) return;
     setSaving(true);
+    const nextDurationValue = Math.max(1, durationValue);
     if (!supabase) {
       setServices([
         ...services,
@@ -34,13 +40,16 @@ export function ServicesManager({ initialServices, shopId, demoMode = false }: P
           id: crypto.randomUUID(),
           shop_id: shopId,
           name,
-          duration_hours: duration,
+          duration_unit: durationUnit,
+          duration_value: nextDurationValue,
+          duration_hours: toDurationHours(durationUnit, nextDurationValue),
           is_active: true,
           sort_order: services.length + 1
         }
       ]);
       setName("");
-      setDuration(1);
+      setDurationUnit("hour");
+      setDurationValue(1);
       setSaving(false);
       toast.success("เพิ่มบริการแล้ว (โหมดตัวอย่าง)");
       return;
@@ -48,7 +57,15 @@ export function ServicesManager({ initialServices, shopId, demoMode = false }: P
     const { data, error } = await supabase
       .schema("bike_booking")
       .from("service_items")
-      .insert({ shop_id: shopId, name, duration_hours: duration, is_active: true, sort_order: services.length + 1 })
+      .insert({
+        shop_id: shopId,
+        name,
+        duration_unit: durationUnit,
+        duration_value: nextDurationValue,
+        duration_hours: toDurationHours(durationUnit, nextDurationValue),
+        is_active: true,
+        sort_order: services.length + 1
+      })
       .select("*")
       .single<ServiceItem>();
     setSaving(false);
@@ -58,7 +75,8 @@ export function ServicesManager({ initialServices, shopId, demoMode = false }: P
     }
     setServices([...services, data]);
     setName("");
-    setDuration(1);
+    setDurationUnit("hour");
+    setDurationValue(1);
     toast.success("เพิ่มบริการแล้ว");
   }
 
@@ -67,8 +85,8 @@ export function ServicesManager({ initialServices, shopId, demoMode = false }: P
     setServices((items) => items.map((item) => (item.id === service.id ? next : item)));
   }
 
-  async function persistService(service: ServiceItem, patch: Partial<Pick<ServiceItem, "name" | "duration_hours" | "is_active">>) {
-    const nextPatch = { ...patch };
+  async function persistService(service: ServiceItem, patch: Partial<Pick<ServiceItem, "name" | "duration_unit" | "duration_value" | "is_active">>) {
+    const nextPatch: Partial<ServiceItem> = { ...patch };
     if (typeof nextPatch.name === "string") {
       nextPatch.name = nextPatch.name.trim();
       if (!nextPatch.name) {
@@ -76,10 +94,14 @@ export function ServicesManager({ initialServices, shopId, demoMode = false }: P
         return;
       }
     }
-    if (typeof nextPatch.duration_hours === "number" && (nextPatch.duration_hours < 1 || nextPatch.duration_hours > 12)) {
-      toast.error("ระยะเวลาต้องอยู่ระหว่าง 1-12 ชั่วโมง");
+    if (typeof nextPatch.duration_value === "number" && (nextPatch.duration_value < 1 || nextPatch.duration_value > 365)) {
+      toast.error("ระยะเวลาต้องมากกว่า 0");
       return;
     }
+
+    const nextUnit = nextPatch.duration_unit ?? service.duration_unit;
+    const nextValue = typeof nextPatch.duration_value === "number" ? nextPatch.duration_value : service.duration_value;
+    nextPatch.duration_hours = toDurationHours(nextUnit, nextValue);
 
     const next = { ...service, ...nextPatch };
     setServices((items) => items.map((item) => (item.id === service.id ? next : item)));
@@ -131,10 +153,24 @@ export function ServicesManager({ initialServices, shopId, demoMode = false }: P
               <FieldLabel htmlFor="name">ชื่อบริการ</FieldLabel>
               <Input id="name" value={name} onChange={(event) => setName(event.target.value)} placeholder="เช่น เปลี่ยนน้ำมันเครื่อง" />
             </Field>
-            <Field>
-              <FieldLabel htmlFor="duration">ระยะเวลา (ชั่วโมง)</FieldLabel>
-              <Input id="duration" type="number" min={1} max={12} value={duration} onChange={(event) => setDuration(Number(event.target.value))} />
-            </Field>
+            <div className="grid gap-3 sm:grid-cols-[1fr_1fr]">
+              <Field>
+                <FieldLabel htmlFor="duration_unit">ประเภทเวลา</FieldLabel>
+                <select
+                  id="duration_unit"
+                  className="min-h-10 rounded-md border border-border bg-background px-3 text-sm outline-none"
+                  value={durationUnit}
+                  onChange={(event) => setDurationUnit(event.target.value as ServiceDurationUnit)}
+                >
+                  <option value="hour">ชั่วโมง</option>
+                  <option value="day">วัน</option>
+                </select>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="duration">ระยะเวลา ({durationUnit === "day" ? "วัน" : "ชั่วโมง"})</FieldLabel>
+                <Input id="duration" type="number" min={1} max={365} value={durationValue} onChange={(event) => setDurationValue(Number(event.target.value))} />
+              </Field>
+            </div>
             <Button type="button" onClick={addService} disabled={saving}>
               {saving ? <Loader2 className="animate-spin" /> : <Plus />}
               เพิ่มบริการ
@@ -149,7 +185,7 @@ export function ServicesManager({ initialServices, shopId, demoMode = false }: P
               {services.map((service, index) => (
                 <Draggable draggableId={service.id} index={index} key={service.id}>
                   {(dragProvided) => (
-                    <div ref={dragProvided.innerRef} {...dragProvided.draggableProps} className="grid gap-3 rounded-lg border bg-muted/40 p-4 lg:grid-cols-[auto_1fr_120px_140px_auto] lg:items-center">
+                    <div ref={dragProvided.innerRef} {...dragProvided.draggableProps} className="grid gap-3 rounded-lg border bg-muted/40 p-4 lg:grid-cols-[auto_1fr_140px_120px_140px_auto] lg:items-center">
                       <button {...dragProvided.dragHandleProps} className="cursor-grab text-muted-foreground" aria-label="ลากเพื่อเรียงลำดับ">
                         <GripVertical />
                       </button>
@@ -158,13 +194,25 @@ export function ServicesManager({ initialServices, shopId, demoMode = false }: P
                         onChange={(event) => updateServiceDraft(service, { name: event.target.value })}
                         onBlur={(event) => persistService(service, { name: event.target.value })}
                       />
+                      <select
+                        className="min-h-10 rounded-md border border-border bg-background px-3 text-sm outline-none"
+                        value={service.duration_unit}
+                        onChange={(event) => {
+                          const nextUnit = event.target.value as ServiceDurationUnit;
+                          updateServiceDraft(service, { duration_unit: nextUnit, duration_hours: toDurationHours(nextUnit, service.duration_value) });
+                          void persistService(service, { duration_unit: nextUnit });
+                        }}
+                      >
+                        <option value="hour">ชั่วโมง</option>
+                        <option value="day">วัน</option>
+                      </select>
                       <Input
                         type="number"
                         min={1}
-                        max={12}
-                        value={service.duration_hours}
-                        onChange={(event) => updateServiceDraft(service, { duration_hours: Number(event.target.value) })}
-                        onBlur={(event) => persistService(service, { duration_hours: Number(event.target.value) })}
+                        max={365}
+                        value={service.duration_value}
+                        onChange={(event) => updateServiceDraft(service, { duration_value: Number(event.target.value), duration_hours: toDurationHours(service.duration_unit, Number(event.target.value)) })}
+                        onBlur={(event) => persistService(service, { duration_value: Number(event.target.value) })}
                       />
                       <label className="flex items-center gap-2 text-sm">
                         <input type="checkbox" checked={service.is_active} onChange={(event) => persistService(service, { is_active: event.target.checked })} />

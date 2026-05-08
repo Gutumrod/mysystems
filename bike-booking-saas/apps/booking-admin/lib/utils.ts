@@ -1,6 +1,6 @@
 import { endOfMonth, endOfWeek, format, isWithinInterval, parse, startOfMonth, startOfWeek } from "date-fns";
 import { th } from "date-fns/locale";
-import type { Booking, BookingStatus, ServiceItem } from "./types";
+import type { Booking, BookingKind, BookingStatus, ServiceItem } from "./types";
 
 export function cn(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(" ");
@@ -58,6 +58,30 @@ export function serviceNames(ids: string[], services: ServiceItem[]) {
   return ids.map((id) => services.find((service) => service.id === id)?.name).filter((name): name is string => Boolean(name));
 }
 
+export function formatBookingSchedule(booking: Booking) {
+  if (booking.booking_kind === "daily") {
+    const endDate = booking.booking_end_date ?? booking.booking_date;
+    return `${formatThaiDate(booking.booking_date)} - ${formatThaiDate(endDate)}`;
+  }
+
+  const start = booking.booking_time_start?.slice(0, 5) || "--:--";
+  const end = booking.booking_time_end?.slice(0, 5) || "--:--";
+  return `${formatThaiDate(booking.booking_date)} · ${start} - ${end}`;
+}
+
+export function isBookingActiveOnDate(booking: Booking, date: string) {
+  if (booking.booking_kind === "daily") {
+    const endDate = booking.booking_end_date ?? booking.booking_date;
+    return booking.booking_date <= date && endDate >= date;
+  }
+
+  return booking.booking_date === date;
+}
+
+export function bookingViewKindLabel(kind: BookingKind) {
+  return kind === "daily" ? "รายวัน" : "รายชั่วโมง";
+}
+
 export function bookingStats(bookings: Booking[]) {
   const now = new Date();
   const today = formatBangkokISODate(now);
@@ -65,8 +89,16 @@ export function bookingStats(bookings: Booking[]) {
   const month = { start: startOfMonth(now), end: endOfMonth(now) };
 
   return {
-    today: bookings.filter((booking) => booking.booking_date === today).length,
-    week: bookings.filter((booking) => isWithinInterval(parse(booking.booking_date, "yyyy-MM-dd", new Date()), week)).length,
-    month: bookings.filter((booking) => isWithinInterval(parse(booking.booking_date, "yyyy-MM-dd", new Date()), month)).length
+    today: bookings.filter((booking) => isBookingActiveOnDate(booking, today)).length,
+    week: bookings.filter((booking) => {
+      const start = parse(booking.booking_date, "yyyy-MM-dd", new Date());
+      const end = parse(booking.booking_end_date ?? booking.booking_date, "yyyy-MM-dd", new Date());
+      return isWithinInterval(start, week) || isWithinInterval(end, week) || (start <= week.start && end >= week.end);
+    }).length,
+    month: bookings.filter((booking) => {
+      const start = parse(booking.booking_date, "yyyy-MM-dd", new Date());
+      const end = parse(booking.booking_end_date ?? booking.booking_date, "yyyy-MM-dd", new Date());
+      return isWithinInterval(start, month) || isWithinInterval(end, month) || (start <= month.start && end >= month.end);
+    }).length
   };
 }

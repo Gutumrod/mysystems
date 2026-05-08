@@ -1,29 +1,26 @@
-﻿import { BookingCalendar } from "@/components/calendar/BookingCalendar";
+import { BookingCalendar } from "@/components/calendar/BookingCalendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { demoBookings, demoServices, hasSupabaseEnv } from "@/lib/mock-data";
+import { getTenantShopContext } from "@/lib/tenant";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { getBangkokISODateOffset, getShopId } from "@/lib/utils";
 import type { Booking, ServiceItem } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
 export default async function CalendarPage() {
   if (!hasSupabaseEnv()) {
-    return <CalendarShell bookings={demoBookings} services={demoServices} shopId={getShopId()} demoMode />;
+    return <CalendarShell bookings={demoBookings} services={demoServices} shopId="11111111-1111-1111-1111-111111111111" demoMode />;
   }
 
   const supabase = await createSupabaseServerClient();
-  const shopId = getShopId();
-  const start = getBangkokISODateOffset(-180);
-  const end = getBangkokISODateOffset(365);
+  const { shopId } = await getTenantShopContext(supabase);
+  if (!shopId) return null;
   const [{ data: bookings }, { data: services }] = await Promise.all([
     supabase
       .schema("bike_booking")
       .from("bookings")
       .select("*")
       .eq("shop_id", shopId)
-      .gte("booking_date", start)
-      .lte("booking_date", end)
       .order("booking_date")
       .limit(500)
       .returns<Booking[]>(),
@@ -61,4 +58,3 @@ function CalendarShell({
     </div>
   );
 }
-

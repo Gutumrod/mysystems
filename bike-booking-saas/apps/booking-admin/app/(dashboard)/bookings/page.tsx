@@ -1,8 +1,8 @@
-﻿import { BookingsTable } from "@/components/bookings/BookingsTable";
+import { BookingsTable } from "@/components/bookings/BookingsTable";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { demoBookings, demoServices, hasSupabaseEnv } from "@/lib/mock-data";
+import { getTenantShopContext } from "@/lib/tenant";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { getBangkokISODateOffset, getShopId } from "@/lib/utils";
 import type { Booking, ServiceItem } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -13,17 +13,14 @@ export default async function BookingsPage() {
   }
 
   const supabase = await createSupabaseServerClient();
-  const shopId = getShopId();
-  const start = getBangkokISODateOffset(-180);
-  const end = getBangkokISODateOffset(365);
+  const { shopId } = await getTenantShopContext(supabase);
+  if (!shopId) return null;
   const [{ data: bookings }, { data: services }] = await Promise.all([
     supabase
       .schema("bike_booking")
       .from("bookings")
       .select("*")
       .eq("shop_id", shopId)
-      .gte("booking_date", start)
-      .lte("booking_date", end)
       .order("booking_date", { ascending: false })
       .limit(500)
       .returns<Booking[]>(),
@@ -51,4 +48,3 @@ function BookingsShell({ bookings, services, demoMode = false }: { bookings: Boo
     </div>
   );
 }
-

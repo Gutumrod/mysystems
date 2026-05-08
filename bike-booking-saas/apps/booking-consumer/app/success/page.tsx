@@ -5,7 +5,7 @@ import { CopyBookingButton } from "@/components/booking/CopyBookingButton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { demoBookings, demoServices, demoShop, hasSupabaseEnv } from "@/lib/mock-data";
-import { bookingCopy, getShopId } from "@/lib/utils";
+import { bookingCopy, formatBookingSchedule, getShopId } from "@/lib/utils";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { BookingConfirmation, ServiceItem, Shop } from "@/lib/types";
 
@@ -154,8 +154,8 @@ function SuccessShell({ shop, booking, serviceNames }: { shop: Shop; booking: Bo
                 <h3 className="font-headline text-2xl font-semibold">#{ticketId}</h3>
               </div>
               <div className="shrink-0 text-left sm:text-right">
-                <p className="text-[#adaaaa] text-xs uppercase tracking-wide mb-1">เวลา</p>
-                <p className="font-headline text-lg font-semibold">{booking.booking_time_start.slice(0, 5)}</p>
+                <p className="text-[#adaaaa] text-xs uppercase tracking-wide mb-1">ช่วงจอง</p>
+                <p className="font-headline text-lg font-semibold">{formatBookingSchedule(booking)}</p>
               </div>
             </div>
 
@@ -175,7 +175,7 @@ function SuccessShell({ shop, booking, serviceNames }: { shop: Shop; booking: Bo
               </div>
               <div className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between">
                 <span className="text-[#adaaaa] text-xs uppercase tracking-widest">วันที่</span>
-                <span className="font-semibold text-sm text-left sm:text-right">{formattedDate}</span>
+                <span className="font-semibold text-sm text-left sm:text-right">{booking.booking_kind === "daily" ? `${formatBookingSchedule(booking)}` : formattedDate}</span>
               </div>
             </div>
 

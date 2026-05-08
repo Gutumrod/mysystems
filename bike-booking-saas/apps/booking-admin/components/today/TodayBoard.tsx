@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createBrowserClient } from "@/lib/supabase/client";
 import type { Booking, BookingStatus, ServiceItem } from "@/lib/types";
-import { serviceNames, statusClass, statusLabel } from "@/lib/utils";
+import { formatBookingSchedule, isBookingActiveOnDate, serviceNames, statusClass, statusLabel } from "@/lib/utils";
 
 type Props = {
   initialBookings: Booking[];
@@ -76,9 +76,10 @@ export function TodayBoard({ initialBookings, services, shopId, today, demoMode 
     await reload();
   }
 
-  const confirmedCount = bookings.filter((booking) => booking.status === "confirmed").length;
-  const inProgressCount = bookings.filter((booking) => booking.status === "in_progress").length;
-  const completedCount = bookings.filter((booking) => booking.status === "completed").length;
+  const activeToday = bookings.filter((booking) => isBookingActiveOnDate(booking, today));
+  const confirmedCount = activeToday.filter((booking) => booking.status === "confirmed").length;
+  const inProgressCount = activeToday.filter((booking) => booking.status === "in_progress").length;
+  const completedCount = activeToday.filter((booking) => booking.status === "completed").length;
 
   return (
     <div className="flex flex-col gap-5">
@@ -99,15 +100,21 @@ export function TodayBoard({ initialBookings, services, shopId, today, demoMode 
           <CardTitle>ลำดับงานหน้าร้าน</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
-          {bookings.length === 0 ? (
+          {activeToday.length === 0 ? (
             <div className="rounded-lg border bg-muted/30 p-6 text-center text-sm text-muted-foreground">ยังไม่มีคิววันนี้</div>
           ) : null}
 
-          {bookings.map((booking) => (
+          {activeToday
+            .sort((a, b) => {
+              const left = a.booking_kind === "daily" ? `${a.booking_date} ${a.booking_end_date ?? a.booking_date}` : `${a.booking_date} ${a.booking_time_start ?? "00:00"}`;
+              const right = b.booking_kind === "daily" ? `${b.booking_date} ${b.booking_end_date ?? b.booking_date}` : `${b.booking_date} ${b.booking_time_start ?? "00:00"}`;
+              return left.localeCompare(right);
+            })
+            .map((booking) => (
             <div key={booking.id} className="grid gap-4 rounded-lg border bg-muted/30 p-4 lg:grid-cols-[140px_1fr_auto] lg:items-center">
               <div className="flex items-center gap-2 text-xl font-bold">
                 <Clock className="size-5 text-primary" />
-                {booking.booking_time_start.slice(0, 5)}
+                {booking.booking_kind === "daily" ? "ทั้งวัน" : booking.booking_time_start?.slice(0, 5) ?? "--:--"}
               </div>
 
               <div className="min-w-0 space-y-2">
@@ -125,6 +132,7 @@ export function TodayBoard({ initialBookings, services, shopId, today, demoMode 
                     {booking.bike_model} {booking.bike_year ?? ""}
                   </span>
                 </div>
+                <p className="text-sm">{formatBookingSchedule(booking)}</p>
                 <p className="text-sm">{serviceNames(booking.service_items, services).join(", ") || "-"}</p>
                 {booking.additional_notes ? <p className="rounded-md bg-card px-3 py-2 text-sm text-muted-foreground">{booking.additional_notes}</p> : null}
               </div>

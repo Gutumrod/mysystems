@@ -9,11 +9,26 @@ type CookieToSet = {
 }
 
 export async function middleware(request: NextRequest) {
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-    return NextResponse.next({ request })
+  const host = request.headers.get("host") ?? ""
+  const requestHeaders = new Headers(request.headers)
+  const isLocalDev =
+    host.startsWith("localhost") ||
+    host.startsWith("127.0.0.1") ||
+    host.startsWith("0.0.0.0")
+  const isVercelPreview = host.endsWith(".vercel.app")
+  const rawSlug = host.split(".")[0]
+  const reserved = new Set(["booking", "booking-admin", "admin", "www", "staging", "preview", "api"])
+  const tenantSlug = rawSlug.endsWith("-admin") ? rawSlug.slice(0, -6) : rawSlug
+
+  if (!isLocalDev && !isVercelPreview && !reserved.has(rawSlug) && tenantSlug) {
+    requestHeaders.set("x-shop-slug", tenantSlug)
   }
 
-  let supabaseResponse = NextResponse.next({ request })
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    return NextResponse.next({ request: { headers: requestHeaders } })
+  }
+
+  let supabaseResponse = NextResponse.next({ request: { headers: requestHeaders } })
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -23,7 +38,7 @@ export async function middleware(request: NextRequest) {
         getAll() { return request.cookies.getAll() },
         setAll(cookiesToSet: CookieToSet[]) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
-          supabaseResponse = NextResponse.next({ request })
+          supabaseResponse = NextResponse.next({ request: { headers: requestHeaders } })
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
           )

@@ -8,7 +8,7 @@ import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { createBrowserClient } from "@/lib/supabase/client";
 import type { Booking, BookingStatus, ServiceItem } from "@/lib/types";
-import { serviceNames, statusClass, statusLabel } from "@/lib/utils";
+import { formatBookingSchedule, isBookingActiveOnDate, serviceNames, statusClass, statusLabel } from "@/lib/utils";
 
 type Props = {
   initialBookings: Booking[];
@@ -27,7 +27,7 @@ export function BookingsTable({ initialBookings, services, demoMode = false }: P
 
   const filtered = bookings.filter((booking) => {
     const matchesQuery = [booking.customer_name, booking.customer_phone, booking.bike_model].join(" ").toLowerCase().includes(query.toLowerCase());
-    const matchesDate = !date || booking.booking_date === date;
+    const matchesDate = !date || isBookingActiveOnDate(booking, date);
     const matchesStatus = status === "all" || booking.status === status;
     return matchesQuery && matchesDate && matchesStatus;
   });
@@ -98,7 +98,7 @@ export function BookingsTable({ initialBookings, services, demoMode = false }: P
           <thead className="bg-muted text-xs uppercase text-muted-foreground">
             <tr>
               <th className="p-3">วันที่</th>
-              <th className="p-3">เวลา</th>
+              <th className="p-3">ช่วง</th>
               <th className="p-3">ลูกค้า</th>
               <th className="p-3">รถ</th>
               <th className="p-3">บริการ</th>
@@ -109,7 +109,7 @@ export function BookingsTable({ initialBookings, services, demoMode = false }: P
             {filtered.map((booking) => (
               <tr key={booking.id} className="cursor-pointer border-t hover:bg-muted/60" onClick={() => setSelected(booking)}>
                 <td className="p-3">{booking.booking_date}</td>
-                <td className="p-3">{booking.booking_time_start.slice(0, 5)} - {booking.booking_time_end.slice(0, 5)}</td>
+                <td className="p-3">{formatBookingSchedule(booking)}</td>
                 <td className="p-3">{booking.customer_name}<br /><span className="text-muted-foreground">{booking.customer_phone}</span></td>
                 <td className="p-3">{booking.bike_model}</td>
                 <td className="p-3">{serviceNames(booking.service_items, services).join(", ")}</td>
@@ -126,11 +126,8 @@ export function BookingsTable({ initialBookings, services, demoMode = false }: P
               <p className="text-lg font-semibold">{selected.customer_name}</p>
               <p className="text-muted-foreground">{selected.customer_phone}</p>
             </div>
-            <div className="rounded-md border bg-muted/40 p-3">
-              <p className="font-medium">วันที่ {selected.booking_date}</p>
-              <p className="text-muted-foreground">
-                เวลา {selected.booking_time_start.slice(0, 5)} - {selected.booking_time_end.slice(0, 5)} น.
-              </p>
+              <div className="rounded-md border bg-muted/40 p-3">
+              <p className="font-medium">วันที่/ช่วง {formatBookingSchedule(selected)}</p>
             </div>
             <p>รถ: {selected.bike_model} {selected.bike_year ?? ""}</p>
             <p>บริการ: {serviceNames(selected.service_items, services).join(", ")}</p>

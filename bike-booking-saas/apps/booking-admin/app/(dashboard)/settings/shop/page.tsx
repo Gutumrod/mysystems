@@ -1,9 +1,9 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ShopSettingsForm } from "@/components/settings/ShopSettingsForm";
 import { demoShop, hasSupabaseEnv } from "@/lib/mock-data";
+import { getTenantShopContext } from "@/lib/tenant";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { getShopId } from "@/lib/utils";
 import type { Shop } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -14,7 +14,9 @@ export default async function ShopSettingsPage() {
   }
 
   const supabase = await createSupabaseServerClient();
-  const { data: shop } = await supabase.schema("bike_booking").from("shops").select("*").eq("id", getShopId()).single<Shop>();
+  const { shopId } = await getTenantShopContext(supabase);
+  if (!shopId) return null;
+  const { data: shop } = await supabase.schema("bike_booking").from("shops").select("*").eq("id", shopId).single<Shop>();
 
   if (!shop) return null;
 
@@ -37,4 +39,3 @@ function ShopSettingsShell({ shop, demoMode = false }: { shop: Shop; demoMode?: 
     </div>
   );
 }
-

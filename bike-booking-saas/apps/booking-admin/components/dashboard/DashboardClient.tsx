@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { createBrowserClient } from "@/lib/supabase/client";
 import type { Booking, BookingStatus, ServiceItem } from "@/lib/types";
-import { bookingStats, formatBangkokISODate, getBangkokMonthRange, serviceNames, statusClass, statusLabel } from "@/lib/utils";
+import { bookingStats, formatBangkokISODate, formatBookingSchedule, isBookingActiveOnDate, serviceNames, statusClass, statusLabel } from "@/lib/utils";
 
 type Props = {
   initialBookings: Booking[];
@@ -22,18 +22,21 @@ export function DashboardClient({ initialBookings, services, shopId, demoMode = 
   const [savingId, setSavingId] = useState<string | null>(null);
   const stats = bookingStats(bookings);
   const today = formatBangkokISODate();
-  const todayBookings = bookings.filter((booking) => booking.booking_date === today).sort((a, b) => a.booking_time_start.localeCompare(b.booking_time_start));
+  const todayBookings = bookings
+    .filter((booking) => isBookingActiveOnDate(booking, today))
+    .sort((a, b) => {
+      const left = a.booking_kind === "daily" ? `${a.booking_date} ${a.booking_end_date ?? a.booking_date}` : `${a.booking_date} ${a.booking_time_start ?? "00:00"}`;
+      const right = b.booking_kind === "daily" ? `${b.booking_date} ${b.booking_end_date ?? b.booking_date}` : `${b.booking_date} ${b.booking_time_start ?? "00:00"}`;
+      return left.localeCompare(right);
+    });
 
   const reload = useCallback(async () => {
     if (!supabase) return;
-    const { start, end } = getBangkokMonthRange();
     const { data } = await supabase
       .schema("bike_booking")
       .from("bookings")
       .select("*")
       .eq("shop_id", shopId)
-      .gte("booking_date", start)
-      .lte("booking_date", end)
       .order("booking_date")
       .returns<Booking[]>();
     setBookings(data ?? []);
@@ -109,12 +112,13 @@ export function DashboardClient({ initialBookings, services, shopId, demoMode = 
           {todayBookings.length === 0 ? <p className="text-sm text-muted-foreground">ยังไม่มีคิววันนี้</p> : null}
           {todayBookings.map((booking) => (
             <div key={booking.id} className="grid gap-3 rounded-md border bg-muted/40 p-4 lg:grid-cols-[120px_1fr_auto] lg:items-center">
-              <div className="font-semibold">{booking.booking_time_start.slice(0, 5)} - {booking.booking_time_end.slice(0, 5)}</div>
+              <div className="font-semibold">{booking.booking_kind === "daily" ? "ทั้งวัน" : `${booking.booking_time_start?.slice(0, 5) ?? "--:--"} - ${booking.booking_time_end?.slice(0, 5) ?? "--:--"}`}</div>
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="font-medium">{booking.customer_name}</p>
                   <Badge className={statusClass(booking.status)}>{statusLabel(booking.status)}</Badge>
                 </div>
+                <p className="text-sm text-muted-foreground">{formatBookingSchedule(booking)}</p>
                 <p className="text-sm text-muted-foreground">{booking.bike_model} · {serviceNames(booking.service_items, services).join(", ")}</p>
               </div>
               <div className="flex flex-wrap gap-2">

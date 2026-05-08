@@ -1,9 +1,9 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ScheduleSettings } from "@/components/settings/ScheduleSettings";
 import { demoHolidays, demoShop, hasSupabaseEnv } from "@/lib/mock-data";
+import { getTenantShopContext } from "@/lib/tenant";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { getShopId } from "@/lib/utils";
 import type { Shop, ShopHoliday } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -14,7 +14,8 @@ export default async function SchedulePage() {
   }
 
   const supabase = await createSupabaseServerClient();
-  const shopId = getShopId();
+  const { shopId } = await getTenantShopContext(supabase);
+  if (!shopId) return null;
   const [{ data: shop }, { data: holidays }] = await Promise.all([
     supabase.schema("bike_booking").from("shops").select("*").eq("id", shopId).single<Shop>(),
     supabase.schema("bike_booking").from("shop_holidays").select("*").eq("shop_id", shopId).order("holiday_date").returns<ShopHoliday[]>()
@@ -41,4 +42,3 @@ function ScheduleShell({ shop, holidays, demoMode = false }: { shop: Shop; holid
     </div>
   );
 }
-

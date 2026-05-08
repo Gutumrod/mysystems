@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AlertCircle, Loader2 } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { BookingSlot, ServiceItem, Shop, ShopHoliday } from "@/lib/types";
 import { bookingSchema, type BookingFormValues } from "@/lib/validations";
-import { calculateDuration, calculateEndTime, cn } from "@/lib/utils";
+import { calculateEndTime, cn, resolveSelectedBookingMode } from "@/lib/utils";
 import { createBrowserClient } from "@/lib/supabase/client";
 import { BikeModelAutocomplete } from "./BikeModelAutocomplete";
 import { DateTimePicker } from "./DateTimePicker";
@@ -28,6 +28,7 @@ type Props = {
 export function BookingForm({ shop, services, holidays, bookings, demoMode = false }: Props) {
   const supabase = useMemo(() => (demoMode ? null : createBrowserClient()), [demoMode]);
   const [submitting, setSubmitting] = useState(false);
+  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
   const dateTimeRef = useRef<HTMLDivElement>(null);
   const {
     control,
@@ -39,28 +40,51 @@ export function BookingForm({ shop, services, holidays, bookings, demoMode = fal
     formState: { errors }
   } = useForm<BookingFormValues>({
     resolver: zodResolver(bookingSchema),
-    defaultValues: {
-      customer_name: "",
-      customer_phone: "",
-      customer_fb: "",
-      customer_line_id: "",
-      bike_model: "",
-      bike_year: "",
-      booking_date: "",
-      booking_time_start: "",
-      service_items: [],
-      additional_notes: ""
-    }
-  });
+      defaultValues: {
+        customer_name: "",
+        customer_phone: "",
+        customer_fb: "",
+        customer_line_id: "",
+        bike_model: "",
+        bike_year: "",
+        booking_date: "",
+        booking_end_date: "",
+        booking_kind: "hourly",
+        booking_time_start: "",
+        booking_time_end: "",
+        service_items: [],
+        additional_notes: ""
+      }
+    });
 
-  const selectedServices = watch("service_items");
+  const selectedServices = selectedServiceIds;
   const bookingDate = watch("booking_date");
+  const bookingEndDate = watch("booking_end_date");
   const bookingTime = watch("booking_time_start");
-  const durationHours = calculateDuration(selectedServices, services);
+  const selectedMode = resolveSelectedBookingMode(selectedServices, services);
+  const bookingKind = selectedMode.kind ?? "hourly";
+  const isDailyBooking = bookingKind === "daily";
+  const hasMixedServices = selectedMode.mixed;
+  const durationValue = selectedMode.value;
+
+  useEffect(() => {
+    setValue("booking_kind", bookingKind, { shouldValidate: true });
+    if (bookingKind === "hourly") {
+      setValue("booking_end_date", "", { shouldValidate: true });
+    } else if (bookingKind === "daily") {
+      setValue("booking_time_start", "", { shouldValidate: true });
+      setValue("booking_time_end", "", { shouldValidate: true });
+    }
+  }, [bookingKind, setValue]);
 
   async function onSubmit(values: BookingFormValues) {
+    if (hasMixedServices) {
+      toast.error("กรุณาอย่าเลือกบริการรายชั่วโมงและรายวันปนกัน");
+      return;
+    }
+
     setSubmitting(true);
-    const endTime = calculateEndTime(values.booking_date, values.booking_time_start, durationHours);
+    const endTime = isDailyBooking ? null : calculateEndTime(values.booking_date, values.booking_time_start || "", durationValue);
 
     if (demoMode || !supabase) {
       window.sessionStorage.setItem(
@@ -69,10 +93,14 @@ export function BookingForm({ shop, services, holidays, bookings, demoMode = fal
           id: "demo-booking",
           shop_id: shop.id,
           ...values,
+          service_items: selectedServiceIds,
+          booking_kind: bookingKind,
           customer_fb: values.customer_fb || null,
           customer_line_id: values.customer_line_id || null,
           bike_year: values.bike_year === "" ? null : values.bike_year,
-          booking_time_end: endTime,
+          booking_end_date: values.booking_end_date || null,
+          booking_time_start: isDailyBooking ? null : values.booking_time_start,
+          booking_time_end: isDailyBooking ? null : endTime,
           additional_notes: values.additional_notes || null,
           status: "confirmed",
           created_at: new Date().toISOString()
@@ -92,10 +120,12 @@ export function BookingForm({ shop, services, holidays, bookings, demoMode = fal
         p_customer_line_id:   values.customer_line_id || null,
         p_bike_model:         values.bike_model,
         p_bike_year:          values.bike_year === "" ? null : values.bike_year,
-        p_service_items:      values.service_items,
+        p_service_items:      selectedServiceIds,
         p_booking_date:       values.booking_date,
-        p_booking_time_start: values.booking_time_start,
-        p_booking_time_end:   endTime,
+        p_booking_end_date:   values.booking_end_date || null,
+        p_booking_kind:       bookingKind,
+        p_booking_time_start: isDailyBooking ? null : values.booking_time_start || null,
+        p_booking_time_end:   isDailyBooking ? null : endTime,
         p_additional_notes:   values.additional_notes || null,
       });
     setSubmitting(false);
@@ -163,9 +193,9 @@ export function BookingForm({ shop, services, holidays, bookings, demoMode = fal
               </Field>
             </div>
 
-            <Field>
-              <FieldLabel>บริการ *</FieldLabel>
-              {services.length === 0 ? (
+          <Field>
+            <FieldLabel>บริการ *</FieldLabel>
+            {services.length === 0 ? (
                 <div className="rounded border border-[#ff7350]/30 bg-[#ff7350]/10 px-4 py-3 text-sm text-[#ffd7ce]">
                   <div className="flex items-start gap-2">
                     <AlertCircle className="mt-0.5 size-4 shrink-0 text-[#ff7350]" />
@@ -186,7 +216,7 @@ export function BookingForm({ shop, services, holidays, bookings, demoMode = fal
                           "flex min-h-14 cursor-pointer items-center gap-3 rounded border border-white/10 bg-[#131313] px-3 text-sm transition hover:border-[#69daff]/30",
                           checked && "border-[#69daff]/50 bg-[#69daff]/10"
                         )}
-                      >
+                        >
                         <input
                           type="checkbox"
                           className="size-4"
@@ -195,20 +225,28 @@ export function BookingForm({ shop, services, holidays, bookings, demoMode = fal
                             const next = event.target.checked
                               ? [...selectedServices, service.id]
                               : selectedServices.filter((id) => id !== service.id);
-                            setValue("service_items", next, { shouldValidate: true });
-                            setValue("booking_time_start", "");
+                            setSelectedServiceIds(next);
+                            setValue("service_items", next, { shouldValidate: true, shouldDirty: true });
+                            setValue("booking_time_start", "", { shouldValidate: true, shouldDirty: true });
                           }}
                         />
-                        <span className="flex flex-col">
-                          <span className="font-medium">{service.name}</span>
-                          <span className="text-xs text-muted-foreground">{service.duration_hours} ชั่วโมง</span>
-                        </span>
-                      </label>
+                          <span className="flex flex-col">
+                            <span className="font-medium">{service.name}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {service.duration_unit === "day"
+                                ? `${service.duration_value ?? service.duration_hours ?? 1} วัน`
+                                : `${service.duration_value ?? service.duration_hours ?? 1} ชั่วโมง`}
+                            </span>
+                          </span>
+                        </label>
                     );
                   })}
                 </div>
               )}
               <FieldError>{errors.service_items?.message}</FieldError>
+              {hasMixedServices ? (
+                <p className="text-sm text-red-500">กรุณาเลือกบริการแบบชั่วโมงหรือแบบวันอย่างใดอย่างหนึ่งในหนึ่งการจอง</p>
+              ) : null}
             </Field>
 
             <Field>
@@ -228,17 +266,21 @@ export function BookingForm({ shop, services, holidays, bookings, demoMode = fal
                 holidays={holidays}
                 bookings={bookings}
                 date={bookingDate}
-                time={bookingTime}
-                durationHours={durationHours}
+                endDate={bookingEndDate ?? ""}
+                time={bookingTime ?? ""}
+                bookingKind={bookingKind}
+                durationValue={durationValue}
                 dateError={errors.booking_date?.message}
+                endDateError={errors.booking_end_date?.message}
                 timeError={errors.booking_time_start?.message}
                 onDateChange={(value) => setValue("booking_date", value, { shouldValidate: true })}
+                onEndDateChange={(value) => setValue("booking_end_date", value, { shouldValidate: true })}
                 onTimeChange={(value) => setValue("booking_time_start", value, { shouldValidate: true })}
               />
             </div>
           </FieldGroup>
 
-          <Button type="submit" disabled={submitting || durationHours === 0} className="w-full">
+          <Button type="submit" disabled={submitting || durationValue === 0 || hasMixedServices} className="w-full">
             {submitting ? <Loader2 data-icon="inline-start" className="animate-spin" /> : null}
             ยืนยันการจอง
           </Button>

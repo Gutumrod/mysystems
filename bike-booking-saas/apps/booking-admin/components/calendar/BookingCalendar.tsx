@@ -1,6 +1,6 @@
 "use client";
 
-import { format, parse, startOfWeek } from "date-fns";
+import { addDays, format, parse, startOfWeek } from "date-fns";
 import { th } from "date-fns/locale";
 import { dateFnsLocalizer, Calendar, Views, type EventProps, type View } from "react-big-calendar";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -8,7 +8,7 @@ import { Dialog } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { createBrowserClient } from "@/lib/supabase/client";
 import type { Booking, ServiceItem } from "@/lib/types";
-import { getBangkokISODateOffset, serviceNames, statusClass, statusLabel } from "@/lib/utils";
+import { formatBookingSchedule, getBangkokISODateOffset, serviceNames, statusClass, statusLabel } from "@/lib/utils";
 
 const localizer = dateFnsLocalizer({
   format,
@@ -74,15 +74,27 @@ export function BookingCalendar({ initialBookings, services, shopId, demoMode = 
 
   const events = bookings
     .map((booking) => ({
-      title: `${booking.customer_name} · ${booking.bike_model}`,
-      start: parseBookingDateTime(booking.booking_date, booking.booking_time_start),
-      end: parseBookingDateTime(booking.booking_date, booking.booking_time_end),
-      allDay: view === Views.MONTH,
+      title: `${booking.customer_name} · ${booking.bike_model}${booking.booking_kind === "daily" ? " (รายวัน)" : ""}`,
+      start: booking.booking_kind === "daily"
+        ? parse(booking.booking_date, "yyyy-MM-dd", new Date())
+        : parseBookingDateTime(booking.booking_date, booking.booking_time_start ?? "00:00"),
+      end: booking.booking_kind === "daily"
+        ? addDays(parse(booking.booking_end_date ?? booking.booking_date, "yyyy-MM-dd", new Date()), 1)
+        : parseBookingDateTime(booking.booking_date, booking.booking_time_end ?? "00:00"),
+      allDay: booking.booking_kind === "daily" || view === Views.MONTH,
       booking
     }))
     .filter((event) => !Number.isNaN(event.start.getTime()) && !Number.isNaN(event.end.getTime()));
   const upcomingBookings = [...bookings]
-    .sort((a, b) => `${a.booking_date} ${a.booking_time_start}`.localeCompare(`${b.booking_date} ${b.booking_time_start}`))
+    .sort((a, b) => {
+      const left = a.booking_kind === "daily"
+        ? `${a.booking_date} ${a.booking_end_date ?? a.booking_date}`
+        : `${a.booking_date} ${a.booking_time_start ?? "00:00"}`;
+      const right = b.booking_kind === "daily"
+        ? `${b.booking_date} ${b.booking_end_date ?? b.booking_date}`
+        : `${b.booking_date} ${b.booking_time_start ?? "00:00"}`;
+      return left.localeCompare(right);
+    })
     .slice(0, 12);
 
   return (
@@ -131,7 +143,7 @@ export function BookingCalendar({ initialBookings, services, shopId, demoMode = 
               onClick={() => setSelected(booking)}
             >
               <span className="font-semibold">
-                {booking.booking_date} {booking.booking_time_start.slice(0, 5)}
+                {formatBookingSchedule(booking)}
               </span>
               <span className="min-w-0">
                 <span className="block truncate font-medium">{booking.customer_name} · {booking.bike_model}</span>
@@ -149,7 +161,7 @@ export function BookingCalendar({ initialBookings, services, shopId, demoMode = 
             <p className="text-lg font-semibold">{selected.customer_name}</p>
             <p>โทร: {selected.customer_phone}</p>
             <p>รถ: {selected.bike_model} {selected.bike_year ?? ""}</p>
-            <p>เวลา: {selected.booking_date} {selected.booking_time_start.slice(0, 5)} - {selected.booking_time_end.slice(0, 5)}</p>
+            <p>ช่วง: {formatBookingSchedule(selected)}</p>
             <p>บริการ: {serviceNames(selected.service_items, services).join(", ")}</p>
             <p>หมายเหตุ: {selected.additional_notes || "-"}</p>
           </div>
