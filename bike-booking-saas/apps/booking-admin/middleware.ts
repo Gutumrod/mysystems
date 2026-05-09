@@ -17,7 +17,7 @@ export async function middleware(request: NextRequest) {
     host.startsWith("0.0.0.0")
   const isVercelPreview = host.endsWith(".vercel.app")
   const rawSlug = host.split(".")[0]
-  const reserved = new Set(["booking", "booking-admin", "admin", "www", "staging", "preview", "api"])
+  const reserved = new Set(["booking", "booking-admin", "admin", "control", "www", "staging", "preview", "api"])
   const tenantSlug = rawSlug.endsWith("-admin") ? rawSlug.slice(0, -6) : rawSlug
 
   if (!isLocalDev && !isVercelPreview && !reserved.has(rawSlug) && tenantSlug) {
