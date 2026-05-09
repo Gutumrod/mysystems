@@ -6,7 +6,7 @@
 
 1. `docs/WORKSPACE_RULES.md`
 2. `docs/WORKFLOW.md`
-3. `SESSION_NOTES_V37.md`
+3. `SESSION_NOTES_CURRENT.md`
 4. `README.md`
 
 อ่าน 4 ไฟล์นี้ก่อนเสมอ แล้วค่อยเริ่มทำงานต่อ
@@ -39,7 +39,7 @@
 ใช้ข้อความนี้เป็นแม่แบบได้:
 
 ```text
-ให้เปิด bike-booking-saas แล้วอ่าน docs/WORKSPACE_RULES.md, docs/WORKFLOW.md, SESSION_NOTES_V37.md, README.md ก่อน
+ให้เปิด bike-booking-saas แล้วอ่าน docs/WORKSPACE_RULES.md, docs/WORKFLOW.md, SESSION_NOTES_CURRENT.md, README.md ก่อน
 จากนั้น git pull origin main
 เช็ก git status --short
 แล้วค่อยทำงานต่อจาก session ล่าสุด
@@ -51,4 +51,3 @@
 - ห้าม commit ตอน sync ยังไม่จบ
 - ถ้าแตะ schema / auth / production config ต้อง backup ก่อน
 - ถ้างานเสร็จแล้ว ต้องอัปเดต session notes ทุกครั้ง
-

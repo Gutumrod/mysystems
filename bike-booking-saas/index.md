@@ -28,8 +28,9 @@
 4. อ่าน [docs/API.md](docs/API.md) ถ้าต้องการดูสัญญา API หรือ flow สำคัญ
 5. อ่าน [docs/POST_DEPLOY_CHECKLIST.md](docs/POST_DEPLOY_CHECKLIST.md) ถ้าจะเช็คหลัง deploy
 6. อ่าน [docs/AGENT_START_END.md](docs/AGENT_START_END.md) ถ้าจะสั่ง Codex/Claude/Gemini ให้เริ่มงานและปิดงานแบบเดียวกัน
-7. อ่าน [DEPLOY_PLAN.md](DEPLOY_PLAN.md) ถ้าจะตาม roadmap และขั้นตอนโครงสร้างระบบ
-8. อ่าน [MASTER BLUEPRINT - Bike Booking SaaS.md](MASTER%20BLUEPRINT%20-%20Bike%20Booking%20SaaS.md) ถ้าต้องการดูสเปกต้นฉบับทั้งหมด
+7. อ่าน [SESSION_NOTES_CURRENT.md](SESSION_NOTES_CURRENT.md) ถ้าจะต่อจาก note ล่าสุด
+8. อ่าน [DEPLOY_PLAN.md](DEPLOY_PLAN.md) ถ้าจะตาม roadmap และขั้นตอนโครงสร้างระบบ
+9. อ่าน [MASTER BLUEPRINT - Bike Booking SaaS.md](MASTER%20BLUEPRINT%20-%20Bike%20Booking%20SaaS.md) ถ้าต้องการดูสเปกต้นฉบับทั้งหมด
 
 ## โครงสร้างหลัก
 
