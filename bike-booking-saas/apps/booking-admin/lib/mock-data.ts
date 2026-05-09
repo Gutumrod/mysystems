@@ -8,6 +8,10 @@ export const demoShop: Shop = {
   line_id: "@bangkokbike",
   facebook_url: "https://facebook.com/bangkokbikecare",
   subscription_status: "active",
+  billing_plan: null,
+  billing_due_date: null,
+  expires_at: null,
+  billing_note: null,
   regular_holidays: ["sun"],
   working_hours: {
     mon: { enabled: true, start: "09:00", end: "18:00", slot_capacity: 1, daily_limit: 0 },

@@ -12,6 +12,10 @@ create table bike_booking.shops (
   phone text,
   line_id text,
   facebook_url text,
+  billing_plan text,
+  billing_due_date date,
+  expires_at date,
+  billing_note text,
   working_hours jsonb not null default '{
     "mon":{"enabled":true,"start":"09:00","end":"18:00","slot_capacity":1,"daily_limit":0},
     "tue":{"enabled":true,"start":"09:00","end":"18:00","slot_capacity":1,"daily_limit":0},

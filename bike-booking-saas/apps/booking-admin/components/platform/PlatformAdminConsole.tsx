@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Save, Search, Shield, Store, Trash2 } from "lucide-react";
+import { AlertTriangle, Clock3, Save, Search, Shield, Store, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { BookingDetailDialog } from "@/components/bookings/BookingDetailDialog";
 import { Badge } from "@/components/ui/badge";
@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { createBrowserClient } from "@/lib/supabase/client";
 import type { Booking, BookingStatus, ServiceItem } from "@/lib/types";
-import { bookingViewKindLabel, formatBookingSchedule, serviceNames, statusClass, statusLabel } from "@/lib/utils";
+import { bookingViewKindLabel, formatBookingSchedule, formatThaiDate, serviceNames, statusClass, statusLabel } from "@/lib/utils";
 
 export type PlatformShop = {
   id: string;
@@ -20,7 +20,19 @@ export type PlatformShop = {
   line_id: string | null;
   facebook_url: string | null;
   subscription_status: "trial" | "active" | "suspended" | "cancelled";
+  billing_plan: string | null;
+  billing_due_date: string | null;
+  expires_at: string | null;
+  billing_note: string | null;
   created_at: string;
+};
+
+type ShopDraft = {
+  subscription_status: PlatformShop["subscription_status"];
+  billing_plan: string;
+  billing_due_date: string;
+  expires_at: string;
+  billing_note: string;
 };
 
 type Props = {
@@ -38,6 +50,16 @@ const statusOptions: Array<{ value: BookingStatus | "all"; label: string }> = [
   { value: "no_show", label: "ไม่มาตามนัด" }
 ];
 
+function buildDraftFromShop(shop: PlatformShop): ShopDraft {
+  return {
+    subscription_status: shop.subscription_status,
+    billing_plan: shop.billing_plan ?? "",
+    billing_due_date: shop.billing_due_date ?? "",
+    expires_at: shop.expires_at ?? "",
+    billing_note: shop.billing_note ?? ""
+  };
+}
+
 export function PlatformAdminConsole({ shops, initialBookings, services }: Props) {
   const supabase = useMemo(() => createBrowserClient(), []);
   const [selectedShopId, setSelectedShopId] = useState<string>("all");
@@ -49,8 +71,9 @@ export function PlatformAdminConsole({ shops, initialBookings, services }: Props
   const [shopRows, setShopRows] = useState(shops);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [savingShopId, setSavingShopId] = useState<string | null>(null);
-  const [shopStatusDraft, setShopStatusDraft] = useState<Record<string, PlatformShop["subscription_status"]>>(
-    Object.fromEntries(shops.map((shop) => [shop.id, shop.subscription_status])) as Record<string, PlatformShop["subscription_status"]>
+  const [deletingShopId, setDeletingShopId] = useState<string | null>(null);
+  const [shopDrafts, setShopDrafts] = useState<Record<string, ShopDraft>>(
+    Object.fromEntries(shops.map((shop) => [shop.id, buildDraftFromShop(shop)])) as Record<string, ShopDraft>
   );
 
   const shopById = useMemo(() => new Map(shopRows.map((shop) => [shop.id, shop])), [shopRows]);
@@ -63,25 +86,38 @@ export function PlatformAdminConsole({ shops, initialBookings, services }: Props
   }, [bookings]);
 
   const filteredShops = shopRows.filter((shop) => {
-    const haystack = [shop.name, shop.slug, shop.id, shop.phone ?? "", shop.line_id ?? ""].join(" ").toLowerCase();
+    const haystack = [shop.name, shop.slug, shop.id, shop.phone ?? "", shop.line_id ?? "", shop.billing_plan ?? ""].join(" ").toLowerCase();
     return haystack.includes(shopQuery.toLowerCase());
   });
 
   const selectedShop = selectedShopId === "all" ? null : shopById.get(selectedShopId) ?? null;
+  const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Bangkok" });
+  const dueSoonThreshold = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString("en-CA", { timeZone: "Asia/Bangkok" });
+  const dueSoonShops = shopRows.filter((shop) => Boolean(shop.billing_due_date && shop.billing_due_date >= today && shop.billing_due_date <= dueSoonThreshold)).length;
+  const expiredShops = shopRows.filter((shop) => Boolean(shop.expires_at && shop.expires_at < today)).length;
 
-  async function saveShopStatus(shop: PlatformShop) {
-    const nextStatus = shopStatusDraft[shop.id] ?? shop.subscription_status;
-    if (nextStatus === shop.subscription_status) {
-      toast.message("สถานะเดิมอยู่แล้ว");
+  async function persistShop(shopId: string, patch: Partial<ShopDraft> = {}) {
+    const shop = shopById.get(shopId);
+    if (!shop) {
+      toast.error("ไม่พบร้านที่เลือก");
       return;
     }
 
-    setSavingShopId(shop.id);
+    const current = shopDrafts[shopId] ?? buildDraftFromShop(shop);
+    const nextDraft: ShopDraft = { ...current, ...patch };
+
+    setSavingShopId(shopId);
     const { error } = await supabase
       .schema("bike_booking")
       .from("shops")
-      .update({ subscription_status: nextStatus })
-      .eq("id", shop.id);
+      .update({
+        subscription_status: nextDraft.subscription_status,
+        billing_plan: nextDraft.billing_plan.trim() || null,
+        billing_due_date: nextDraft.billing_due_date || null,
+        expires_at: nextDraft.expires_at || null,
+        billing_note: nextDraft.billing_note.trim() || null
+      })
+      .eq("id", shopId);
     setSavingShopId(null);
 
     if (error) {
@@ -89,8 +125,35 @@ export function PlatformAdminConsole({ shops, initialBookings, services }: Props
       return;
     }
 
-    setShopRows((items) => items.map((item) => (item.id === shop.id ? { ...item, subscription_status: nextStatus } : item)));
-    toast.success(`อัปเดตสถานะร้านเป็น ${nextStatus} แล้ว`);
+    setShopRows((items) => items.map((item) => (item.id === shopId ? { ...item, ...nextDraft, billing_plan: nextDraft.billing_plan.trim() || null, billing_due_date: nextDraft.billing_due_date || null, expires_at: nextDraft.expires_at || null, billing_note: nextDraft.billing_note.trim() || null } : item)));
+    setShopDrafts((items) => ({ ...items, [shopId]: nextDraft }));
+    toast.success("บันทึกข้อมูลร้านแล้ว");
+  }
+
+  async function deleteShop(shop: PlatformShop) {
+    const ok = window.confirm(`ลบร้าน ${shop.name} ใช่ไหม? การลบจะลบข้อมูล booking/service/customer ที่เกี่ยวข้องด้วย`);
+    if (!ok) return;
+
+    setDeletingShopId(shop.id);
+    const { error } = await supabase.schema("bike_booking").from("shops").delete().eq("id", shop.id);
+    setDeletingShopId(null);
+
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+
+    setShopRows((items) => items.filter((item) => item.id !== shop.id));
+    setBookings((items) => items.filter((item) => item.shop_id !== shop.id));
+    setShopDrafts((items) => {
+      const next = { ...items };
+      delete next[shop.id];
+      return next;
+    });
+    if (selectedShopId === shop.id) {
+      setSelectedShopId("all");
+    }
+    toast.success(`ลบร้าน ${shop.name} แล้ว`);
   }
 
   const visibleBookings = bookings.filter((booking) => {
@@ -115,6 +178,8 @@ export function PlatformAdminConsole({ shops, initialBookings, services }: Props
     return matchesShop && matchesDate && matchesStatus && haystack.includes(bookingQuery.toLowerCase());
   });
 
+  const selectedDraft = selectedShop ? shopDrafts[selectedShop.id] ?? buildDraftFromShop(selectedShop) : null;
+
   return (
     <div className="grid gap-5 xl:grid-cols-[360px_1fr]">
       <aside className="flex flex-col gap-4">
@@ -127,7 +192,7 @@ export function PlatformAdminConsole({ shops, initialBookings, services }: Props
               <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 className="pl-9"
-                placeholder="ค้นหาชื่อร้าน / slug / uuid"
+                placeholder="ค้นหาชื่อร้าน / slug / uuid / แพ็กเกจ"
                 value={shopQuery}
                 onChange={(event) => setShopQuery(event.target.value)}
               />
@@ -157,6 +222,11 @@ export function PlatformAdminConsole({ shops, initialBookings, services }: Props
                     </span>
                     <span className="text-xs text-muted-foreground">{shop.slug}</span>
                     <span className="break-all text-[11px] text-muted-foreground">{shop.id}</span>
+                    <span className="text-[11px] text-muted-foreground">
+                      {shop.subscription_status}
+                      {shop.billing_due_date ? ` · ครบจ่าย ${formatThaiDate(shop.billing_due_date)}` : ""}
+                      {shop.expires_at ? ` · หมดอายุ ${formatThaiDate(shop.expires_at)}` : ""}
+                    </span>
                   </button>
                 );
               })}
@@ -166,6 +236,15 @@ export function PlatformAdminConsole({ shops, initialBookings, services }: Props
       </aside>
 
       <section className="flex min-w-0 flex-col gap-4">
+        <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-6">
+          <Stat title="ร้านทั้งหมด" value={shopRows.length} icon={Store} />
+          <Stat title="ร้าน active" value={shopRows.filter((shop) => shop.subscription_status === "active").length} icon={Shield} />
+          <Stat title="ร้าน suspended" value={shopRows.filter((shop) => shop.subscription_status === "suspended").length} icon={AlertTriangle} />
+          <Stat title="ครบจ่ายใน 7 วัน" value={dueSoonShops} icon={Clock3} />
+          <Stat title="หมดอายุแล้ว" value={expiredShops} icon={AlertTriangle} />
+          <Stat title="การจองทั้งหมด" value={bookings.length} icon={Store} />
+        </section>
+
         <Card>
           <CardHeader>
             <CardTitle className="flex flex-wrap items-center gap-2">
@@ -181,45 +260,194 @@ export function PlatformAdminConsole({ shops, initialBookings, services }: Props
           </CardContent>
         </Card>
 
-        {selectedShop ? (
+        {selectedShop && selectedDraft ? (
           <Card>
             <CardHeader>
               <CardTitle>จัดการร้านที่เลือก</CardTitle>
             </CardHeader>
-            <CardContent className="flex flex-col gap-3">
-              <div className="grid gap-3 md:grid-cols-2">
+            <CardContent className="flex flex-col gap-4">
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                 <div className="rounded-md border bg-muted/40 p-3">
                   <p className="text-xs uppercase text-muted-foreground">สถานะปัจจุบัน</p>
                   <p className="mt-1 font-medium capitalize">{selectedShop.subscription_status}</p>
                 </div>
                 <div className="rounded-md border bg-muted/40 p-3">
-                  <p className="text-xs uppercase text-muted-foreground">public booking</p>
-                  <p className="mt-1 font-medium">
-                    {selectedShop.subscription_status === "active" || selectedShop.subscription_status === "trial" ? "เปิด" : "ปิด"}
-                  </p>
+                  <p className="text-xs uppercase text-muted-foreground">แพ็กเกจบิล</p>
+                  <p className="mt-1 font-medium">{selectedDraft.billing_plan.trim() || "-"}</p>
+                </div>
+                <div className="rounded-md border bg-muted/40 p-3">
+                  <p className="text-xs uppercase text-muted-foreground">ครบจ่าย</p>
+                  <p className="mt-1 font-medium">{selectedDraft.billing_due_date ? formatThaiDate(selectedDraft.billing_due_date) : "-"}</p>
+                </div>
+                <div className="rounded-md border bg-muted/40 p-3">
+                  <p className="text-xs uppercase text-muted-foreground">หมดอายุ</p>
+                  <p className="mt-1 font-medium">{selectedDraft.expires_at ? formatThaiDate(selectedDraft.expires_at) : "-"}</p>
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-2">
-                {(["trial", "active", "suspended", "cancelled"] as const).map((nextStatus) => (
-                  <Button
-                    key={nextStatus}
-                    type="button"
-                    variant={selectedShop.subscription_status === nextStatus ? "default" : "outline"}
-                    disabled={savingShopId === selectedShop.id}
-                    onClick={() => {
-                      setShopStatusDraft((items) => ({ ...items, [selectedShop.id]: nextStatus }));
-                      void saveShopStatus({ ...selectedShop, subscription_status: nextStatus });
-                    }}
+              <div className="grid gap-3 lg:grid-cols-2">
+                <label className="flex flex-col gap-2 text-sm">
+                  <span className="font-medium">สถานะร้าน</span>
+                  <select
+                    className="min-h-10 rounded-md border border-border bg-background px-3 text-sm outline-none"
+                    value={selectedDraft.subscription_status}
+                    onChange={(event) =>
+                      setShopDrafts((items) => ({
+                        ...items,
+                        [selectedShop.id]: {
+                          ...selectedDraft,
+                          subscription_status: event.target.value as PlatformShop["subscription_status"]
+                        }
+                      }))
+                    }
                   >
-                    {savingShopId === selectedShop.id ? <Shield className="size-3.5 animate-pulse" /> : <Save className="size-3.5" />}
-                    ตั้งเป็น {nextStatus}
-                  </Button>
-                ))}
+                    <option value="trial">trial</option>
+                    <option value="active">active</option>
+                    <option value="suspended">suspended</option>
+                    <option value="cancelled">cancelled</option>
+                  </select>
+                </label>
+
+                <label className="flex flex-col gap-2 text-sm">
+                  <span className="font-medium">แพ็กเกจ / แผนบิล</span>
+                  <Input
+                    value={selectedDraft.billing_plan}
+                    onChange={(event) =>
+                      setShopDrafts((items) => ({
+                        ...items,
+                        [selectedShop.id]: { ...selectedDraft, billing_plan: event.target.value }
+                      }))
+                    }
+                    placeholder="เช่น monthly / yearly / custom"
+                  />
+                </label>
+
+                <label className="flex flex-col gap-2 text-sm">
+                  <span className="font-medium">วันครบจ่าย</span>
+                  <Input
+                    type="date"
+                    value={selectedDraft.billing_due_date}
+                    onChange={(event) =>
+                      setShopDrafts((items) => ({
+                        ...items,
+                        [selectedShop.id]: { ...selectedDraft, billing_due_date: event.target.value }
+                      }))
+                    }
+                  />
+                </label>
+
+                <label className="flex flex-col gap-2 text-sm">
+                  <span className="font-medium">วันหมดอายุ</span>
+                  <Input
+                    type="date"
+                    value={selectedDraft.expires_at}
+                    onChange={(event) =>
+                      setShopDrafts((items) => ({
+                        ...items,
+                        [selectedShop.id]: { ...selectedDraft, expires_at: event.target.value }
+                      }))
+                    }
+                  />
+                </label>
+              </div>
+
+              <label className="flex flex-col gap-2 text-sm">
+                <span className="font-medium">โน้ตบิล / หมายเหตุร้าน</span>
+                <textarea
+                  className="min-h-28 rounded-md border border-border bg-background px-3 py-2 text-sm outline-none"
+                  value={selectedDraft.billing_note}
+                  onChange={(event) =>
+                    setShopDrafts((items) => ({
+                      ...items,
+                      [selectedShop.id]: { ...selectedDraft, billing_note: event.target.value }
+                    }))
+                  }
+                  placeholder="จดสถานะชำระเงิน, หมายเหตุการต่ออายุ, หรือเรื่องที่ต้องตามต่อ"
+                />
+              </label>
+
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  disabled={savingShopId === selectedShop.id}
+                  onClick={() => void persistShop(selectedShop.id)}
+                >
+                  {savingShopId === selectedShop.id ? <Shield className="size-3.5 animate-pulse" /> : <Save className="size-3.5" />}
+                  บันทึกข้อมูลร้าน
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={savingShopId === selectedShop.id}
+                  onClick={() => void persistShop(selectedShop.id, { subscription_status: "active" })}
+                >
+                  เปิดใช้งาน
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={savingShopId === selectedShop.id}
+                  onClick={() => void persistShop(selectedShop.id, { subscription_status: "suspended" })}
+                >
+                  พักร้าน
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={savingShopId === selectedShop.id}
+                  onClick={() => void persistShop(selectedShop.id, { subscription_status: "trial" })}
+                >
+                  ตั้ง trial
+                </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  disabled={savingShopId === selectedShop.id || deletingShopId === selectedShop.id}
+                  onClick={() => void deleteShop(selectedShop)}
+                >
+                  {deletingShopId === selectedShop.id ? <Shield className="size-3.5 animate-pulse" /> : <Trash2 className="size-3.5" />}
+                  ลบร้าน
+                </Button>
               </div>
             </CardContent>
           </Card>
         ) : null}
+
+        <Card>
+          <CardHeader>
+            <CardTitle>รายการร้าน</CardTitle>
+          </CardHeader>
+          <CardContent className="overflow-x-auto">
+            <table className="w-full min-w-[1080px] border-collapse text-sm">
+              <thead>
+                <tr className="border-b text-left text-muted-foreground">
+                  <th className="py-3 pr-4 font-medium">ชื่อร้าน</th>
+                  <th className="py-3 pr-4 font-medium">Slug</th>
+                  <th className="py-3 pr-4 font-medium">สถานะ</th>
+                  <th className="py-3 pr-4 font-medium">แพ็กเกจ</th>
+                  <th className="py-3 pr-4 font-medium">ครบจ่าย</th>
+                  <th className="py-3 pr-4 font-medium">หมดอายุ</th>
+                  <th className="py-3 pr-4 font-medium">คิวทั้งหมด</th>
+                </tr>
+              </thead>
+              <tbody>
+                {shopRows.map((shop) => (
+                  <tr key={shop.id} className="border-b last:border-b-0">
+                    <td className="py-4 pr-4 font-medium">{shop.name}</td>
+                    <td className="py-4 pr-4 text-muted-foreground">{shop.slug}</td>
+                    <td className="py-4 pr-4">
+                      <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium capitalize">{shop.subscription_status}</span>
+                    </td>
+                    <td className="py-4 pr-4 text-muted-foreground">{shop.billing_plan ?? "-"}</td>
+                    <td className="py-4 pr-4 text-muted-foreground">{shop.billing_due_date ? formatThaiDate(shop.billing_due_date) : "-"}</td>
+                    <td className="py-4 pr-4 text-muted-foreground">{shop.expires_at ? formatThaiDate(shop.expires_at) : "-"}</td>
+                    <td className="py-4 pr-4 text-muted-foreground">{bookingCountByShop.get(shop.id) ?? 0}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader>
@@ -239,7 +467,9 @@ export function PlatformAdminConsole({ shops, initialBookings, services }: Props
                 onChange={(event) => setStatus(event.target.value as BookingStatus | "all")}
               >
                 {statusOptions.map((option) => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
                 ))}
               </select>
             </div>
@@ -275,7 +505,9 @@ export function PlatformAdminConsole({ shops, initialBookings, services }: Props
                           <p className="text-muted-foreground">{booking.customer_phone}</p>
                           <p className="text-xs text-muted-foreground">{booking.customer_line_id || booking.customer_fb || ""}</p>
                         </td>
-                        <td className="p-3">{booking.bike_model} {booking.bike_year ?? ""}</td>
+                        <td className="p-3">
+                          {booking.bike_model} {booking.bike_year ?? ""}
+                        </td>
                         <td className="p-3">{serviceNames(booking.service_items, services).join(", ") || `${booking.service_items.length} รายการ`}</td>
                         <td className="p-3">
                           <Badge className={statusClass(booking.status)}>{statusLabel(booking.status)}</Badge>
@@ -291,7 +523,9 @@ export function PlatformAdminConsole({ shops, initialBookings, services }: Props
                   })}
                   {visibleBookings.length === 0 ? (
                     <tr>
-                      <td className="p-6 text-center text-muted-foreground" colSpan={7}>ไม่พบรายการจอง</td>
+                      <td className="p-6 text-center text-muted-foreground" colSpan={7}>
+                        ไม่พบรายการจอง
+                      </td>
                     </tr>
                   ) : null}
                 </tbody>
@@ -318,6 +552,20 @@ export function PlatformAdminConsole({ shops, initialBookings, services }: Props
         }}
       />
     </div>
+  );
+}
+
+function Stat({ title, value, icon: Icon }: { title: string; value: number; icon: typeof Store }) {
+  return (
+    <Card>
+      <CardContent className="flex items-center justify-between gap-4 p-5">
+        <div>
+          <p className="text-sm text-muted-foreground">{title}</p>
+          <p className="mt-2 text-3xl font-bold">{value}</p>
+        </div>
+        <Icon className="size-5 text-muted-foreground" />
+      </CardContent>
+    </Card>
   );
 }
 

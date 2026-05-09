@@ -22,6 +22,10 @@ export type Shop = {
   working_hours: WorkingHours;
   regular_holidays: WeekdayKey[];
   subscription_status: "trial" | "active" | "suspended" | "cancelled";
+  billing_plan?: string | null;
+  billing_due_date?: string | null;
+  expires_at?: string | null;
+  billing_note?: string | null;
 };
 
 export type ServiceItem = {

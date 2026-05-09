@@ -1,10 +1,11 @@
 import { redirect } from "next/navigation";
-import { BarChart3, Building2, Shield, Store } from "lucide-react";
+import { AlertTriangle, BarChart3, Building2, Clock3, Shield, Store } from "lucide-react";
 import { PlatformAdminConsole, type PlatformShop } from "@/components/platform/PlatformAdminConsole";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { hasSupabaseEnv } from "@/lib/mock-data";
 import type { Booking, ServiceItem } from "@/lib/types";
+import { formatBangkokISODate, formatThaiDate, getBangkokISODateOffset } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -50,6 +51,8 @@ export default async function PlatformPage() {
     .returns<PlatformShop[]>();
 
   const shopRows = shops ?? [];
+  const today = formatBangkokISODate();
+  const dueSoonThreshold = getBangkokISODateOffset(7);
   const [{ data: bookings }, { data: services }] = await Promise.all([
     supabase
       .schema("bike_booking")
@@ -70,6 +73,8 @@ export default async function PlatformPage() {
   const totalShops = shopRows.length;
   const activeShops = shopRows.filter((shop) => shop.subscription_status === "active").length;
   const suspendedShops = shopRows.filter((shop) => shop.subscription_status === "suspended").length;
+  const dueSoonShops = shopRows.filter((shop) => Boolean(shop.billing_due_date && shop.billing_due_date >= today && shop.billing_due_date <= dueSoonThreshold)).length;
+  const expiredShops = shopRows.filter((shop) => Boolean(shop.expires_at && shop.expires_at < today)).length;
   const totalBookings = bookingRows.length;
 
   const bookingCountByShop = new Map<string, number>();
@@ -97,17 +102,25 @@ export default async function PlatformPage() {
         <Stat title="การจองทั้งหมด" value={totalBookings} icon={BarChart3} />
       </section>
 
+      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-2">
+        <Stat title="ครบจ่ายใน 7 วัน" value={dueSoonShops} icon={Clock3} />
+        <Stat title="หมดอายุแล้ว" value={expiredShops} icon={AlertTriangle} />
+      </section>
+
       <Card>
         <CardHeader>
           <CardTitle>รายการร้าน</CardTitle>
         </CardHeader>
         <CardContent className="overflow-x-auto">
-          <table className="w-full min-w-[720px] border-collapse text-sm">
+          <table className="w-full min-w-[980px] border-collapse text-sm">
             <thead>
               <tr className="border-b text-left text-muted-foreground">
                 <th className="py-3 pr-4 font-medium">ชื่อร้าน</th>
                 <th className="py-3 pr-4 font-medium">Slug</th>
                 <th className="py-3 pr-4 font-medium">สถานะ</th>
+                <th className="py-3 pr-4 font-medium">แพ็กเกจ</th>
+                <th className="py-3 pr-4 font-medium">ครบจ่าย</th>
+                <th className="py-3 pr-4 font-medium">หมดอายุ</th>
                 <th className="py-3 pr-4 font-medium">เบอร์</th>
                 <th className="py-3 pr-4 font-medium">คิวทั้งหมด</th>
               </tr>
@@ -122,6 +135,9 @@ export default async function PlatformPage() {
                       {shop.subscription_status}
                     </span>
                   </td>
+                  <td className="py-4 pr-4 text-muted-foreground">{shop.billing_plan ?? "-"}</td>
+                  <td className="py-4 pr-4 text-muted-foreground">{shop.billing_due_date ? formatThaiDate(shop.billing_due_date) : "-"}</td>
+                  <td className="py-4 pr-4 text-muted-foreground">{shop.expires_at ? formatThaiDate(shop.expires_at) : "-"}</td>
                   <td className="py-4 pr-4 text-muted-foreground">{shop.phone ?? "-"}</td>
                   <td className="py-4 pr-4 text-muted-foreground">{bookingCountByShop.get(shop.id) ?? 0}</td>
                 </tr>
