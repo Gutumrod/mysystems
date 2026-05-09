@@ -13,6 +13,7 @@
 - โค้ดจริง: GitHub `main`
 - สถานะงาน: `SESSION_NOTES_CURRENT.md`
 - ข้อมูลวิธีทำงาน: `docs/WORKFLOW.md`
+- แม่แบบส่งงาน: `HANDOFF_TEMPLATE.md`
 - เช็กลิสต์ปล่อยงาน: `docs/POST_DEPLOY_CHECKLIST.md`
 
 ## เริ่มงานบนเครื่องใหม่

@@ -4,10 +4,9 @@
 
 ## เวอร์ชันล่าสุด
 
-- [SESSION_NOTES_V38.md](SESSION_NOTES_V38.md)
+- [SESSION_NOTES_V40.md](SESSION_NOTES_V40.md)
 
 ## กติกา
 
 - เวลาเริ่มงาน ให้เปิดไฟล์นี้ก่อนถ้าไม่รู้ว่าจะอ่าน note ตัวไหน
 - ถ้ามี session note ใหม่กว่า ให้ update ไฟล์นี้ให้ชี้ไปที่เวอร์ชันล่าสุดเสมอ
-
