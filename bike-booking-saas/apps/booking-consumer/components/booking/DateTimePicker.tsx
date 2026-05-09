@@ -17,6 +17,7 @@ type Props = {
   time: string;
   bookingKind: BookingKind;
   durationValue: number;
+  minimumEndDate: string;
   dateError?: string;
   endDateError?: string;
   timeError?: string;
@@ -34,6 +35,7 @@ export function DateTimePicker({
   time,
   bookingKind,
   durationValue,
+  minimumEndDate,
   dateError,
   endDateError,
   timeError,
@@ -73,13 +75,15 @@ export function DateTimePicker({
           <Input
             id="booking_end_date"
             type="date"
-            min={date || format(new Date(), "yyyy-MM-dd")}
+            min={minimumEndDate || date || format(new Date(), "yyyy-MM-dd")}
             value={endDate}
             onChange={(event) => onEndDateChange(event.target.value)}
             aria-invalid={Boolean(endDateError)}
           />
           <FieldError>{endDateError}</FieldError>
-          <p className="text-sm text-muted-foreground">งานแบบค้างหลายวันจะนับโควตาตามวัน ไม่ใช้ช่องเวลา</p>
+          <p className="text-sm text-muted-foreground">
+            งานแบบค้างหลายวันจะนับโควตาตามวัน ไม่ใช้ช่องเวลา และต้องไม่น้อยกว่าระยะเวลาที่เลือก ({durationValue} วัน)
+          </p>
         </Field>
       ) : (
         <Field>

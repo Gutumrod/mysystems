@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { BookingSlot, ServiceItem, Shop, ShopHoliday } from "@/lib/types";
 import { bookingSchema, type BookingFormValues } from "@/lib/validations";
-import { calculateEndTime, cn, resolveSelectedBookingMode } from "@/lib/utils";
+import { calculateEndTime, calculateMinimumDailyEndDate, cn, resolveSelectedBookingMode } from "@/lib/utils";
 import { createBrowserClient } from "@/lib/supabase/client";
 import { BikeModelAutocomplete } from "./BikeModelAutocomplete";
 import { DateTimePicker } from "./DateTimePicker";
@@ -37,25 +37,27 @@ export function BookingForm({ shop, services, holidays, bookings, demoMode = fal
     watch,
     setValue,
     setError,
+    clearErrors,
     formState: { errors }
   } = useForm<BookingFormValues>({
     resolver: zodResolver(bookingSchema),
-      defaultValues: {
-        customer_name: "",
-        customer_phone: "",
-        customer_fb: "",
-        customer_line_id: "",
-        bike_model: "",
-        bike_year: "",
-        booking_date: "",
-        booking_end_date: "",
-        booking_kind: "hourly",
-        booking_time_start: "",
-        booking_time_end: "",
-        service_items: [],
-        additional_notes: ""
-      }
-    });
+    defaultValues: {
+      customer_name: "",
+      customer_phone: "",
+      customer_fb: "",
+      customer_line_id: "",
+      bike_model: "",
+      bike_year: "",
+      booking_date: "",
+      booking_end_date: "",
+      minimum_booking_end_date: "",
+      booking_kind: "hourly",
+      booking_time_start: "",
+      booking_time_end: "",
+      service_items: [],
+      additional_notes: ""
+    }
+  });
 
   const selectedServices = selectedServiceIds;
   const bookingDate = watch("booking_date");
@@ -66,20 +68,36 @@ export function BookingForm({ shop, services, holidays, bookings, demoMode = fal
   const isDailyBooking = bookingKind === "daily";
   const hasMixedServices = selectedMode.mixed;
   const durationValue = selectedMode.value;
+  const minimumEndDate = isDailyBooking && bookingDate ? calculateMinimumDailyEndDate(bookingDate, durationValue) : "";
 
   useEffect(() => {
     setValue("booking_kind", bookingKind, { shouldValidate: true });
     if (bookingKind === "hourly") {
       setValue("booking_end_date", "", { shouldValidate: true });
+      setValue("minimum_booking_end_date", "", { shouldValidate: true });
     } else if (bookingKind === "daily") {
       setValue("booking_time_start", "", { shouldValidate: true });
       setValue("booking_time_end", "", { shouldValidate: true });
+      setValue("minimum_booking_end_date", minimumEndDate, { shouldValidate: true });
+      if (bookingEndDate) {
+        if (minimumEndDate && bookingEndDate < minimumEndDate) {
+          setError("booking_end_date", { type: "validate", message: "วันสิ้นสุดสั้นกว่าระยะเวลาบริการรวม" });
+        } else {
+          clearErrors("booking_end_date");
+        }
+      }
     }
-  }, [bookingKind, setValue]);
+  }, [bookingKind, bookingEndDate, clearErrors, minimumEndDate, setError, setValue]);
 
   async function onSubmit(values: BookingFormValues) {
     if (hasMixedServices) {
       toast.error("กรุณาอย่าเลือกบริการรายชั่วโมงและรายวันปนกัน");
+      return;
+    }
+
+    if (isDailyBooking && minimumEndDate && values.booking_end_date && values.booking_end_date < minimumEndDate) {
+      setError("booking_end_date", { type: "validate", message: "วันสิ้นสุดสั้นกว่าระยะเวลาบริการรวม" });
+      toast.error("วันสิ้นสุดสั้นกว่าระยะเวลาบริการรวม");
       return;
     }
 
@@ -270,6 +288,7 @@ export function BookingForm({ shop, services, holidays, bookings, demoMode = fal
                 time={bookingTime ?? ""}
                 bookingKind={bookingKind}
                 durationValue={durationValue}
+                minimumEndDate={minimumEndDate}
                 dateError={errors.booking_date?.message}
                 endDateError={errors.booking_end_date?.message}
                 timeError={errors.booking_time_start?.message}

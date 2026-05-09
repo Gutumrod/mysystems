@@ -13,6 +13,7 @@ export const bookingSchema = z.object({
   bike_year: z.coerce.number().int().min(1990, "ปีต้องไม่ต่ำกว่า 1990").max(new Date().getFullYear() + 1).optional().or(z.literal("")),
   booking_date: z.string().min(1, "กรุณาเลือกวันที่"),
   booking_end_date: z.string().optional().or(z.literal("")),
+  minimum_booking_end_date: z.string().optional().or(z.literal("")),
   booking_kind: z.enum(["hourly", "daily"]),
   booking_time_start: z.string().optional().or(z.literal("")),
   booking_time_end: z.string().optional().or(z.literal("")),
@@ -31,6 +32,9 @@ export const bookingSchema = z.object({
     }
     if (values.booking_end_date && values.booking_end_date < values.booking_date) {
       ctx.addIssue({ code: "custom", path: ["booking_end_date"], message: "วันสิ้นสุดต้องไม่ก่อนวันเริ่ม" });
+    }
+    if (values.minimum_booking_end_date && values.booking_end_date && values.booking_end_date < values.minimum_booking_end_date) {
+      ctx.addIssue({ code: "custom", path: ["booking_end_date"], message: "วันสิ้นสุดสั้นกว่าระยะเวลาบริการรวม" });
     }
   }
 });

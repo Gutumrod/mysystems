@@ -1,4 +1,4 @@
-import { addHours, format, isBefore, isSameDay, parse, set } from "date-fns";
+import { addDays, addHours, format, isBefore, isSameDay, parse, set } from "date-fns";
 import { th } from "date-fns/locale";
 import type { BookingConfirmation, BookingKind, BookingSlot, ServiceItem, Shop, ShopHoliday, WeekdayKey } from "./types";
 
@@ -64,6 +64,13 @@ export function resolveSelectedBookingMode(serviceIds: string[], services: Servi
 export function calculateEndTime(date: string, start: string, durationHours: number) {
   const startDate = parse(`${date} ${start}`, "yyyy-MM-dd HH:mm", new Date());
   return format(addHours(startDate, Math.max(durationHours, 1)), "HH:mm");
+}
+
+export function calculateMinimumDailyEndDate(startDate: string, requiredDays: number) {
+  if (!startDate) return "";
+  const parsedStart = parse(startDate, "yyyy-MM-dd", new Date());
+  const safeDays = Math.max(Math.floor(requiredDays), 1);
+  return format(addDays(parsedStart, safeDays - 1), "yyyy-MM-dd");
 }
 
 function normalizedCapacity(value: number | undefined, fallback: number, minimum: number) {
