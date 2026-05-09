@@ -395,7 +395,8 @@ grant select on bike_booking.shops, bike_booking.service_items, bike_booking.sho
 grant insert, select on bike_booking.bookings to anon, authenticated;
 grant select, update, delete on bike_booking.bookings to authenticated;
 grant select, insert, update, delete on bike_booking.service_items, bike_booking.shop_holidays to authenticated;
-grant select, update on bike_booking.shops, bike_booking.customers to authenticated;
+grant select, update, delete on bike_booking.shops to authenticated;
+grant select, update on bike_booking.customers to authenticated;
 grant select on bike_booking.shop_users to authenticated;
 grant execute on function bike_booking.mark_booking_no_show(uuid) to authenticated;
 
