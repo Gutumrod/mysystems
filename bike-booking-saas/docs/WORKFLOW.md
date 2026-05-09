@@ -22,6 +22,7 @@
 - **Git repo / GitHub**: ประวัติโค้ดจริงและเวอร์ชันที่ต้องอัปเดตหลังจบงาน
 - **Session notes**: บันทึกสถานะล่าสุดของงาน
 - **Backups**: สำเนาก่อนแก้ของเสี่ยง เช่น schema, deployment config, logic สำคัญ
+- **Domain standard**: ดู [docs/DOMAIN_STANDARD.md](DOMAIN_STANDARD.md) ถ้าเกี่ยวกับชื่อ URL หรือ flow สมัครร้าน
 
 ## โครงโฟลเดอร์ที่ใช้
 

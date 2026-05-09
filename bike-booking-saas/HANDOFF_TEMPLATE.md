@@ -13,7 +13,8 @@
 2. docs/WORKSPACE_RULES.md
 3. docs/WORKFLOW.md
 4. SESSION_NOTES_CURRENT.md
-5. README.md
+5. docs/DOMAIN_STANDARD.md
+6. README.md
 
 ขอบเขตงาน:
 - ทำเฉพาะ bike-booking-saas
@@ -53,7 +54,7 @@
 ## เวอร์ชันสั้นมาก
 
 ```text
-อ่าน START_HERE.md, docs/WORKSPACE_RULES.md, docs/WORKFLOW.md, SESSION_NOTES_CURRENT.md, README.md ก่อน
+อ่าน START_HERE.md, docs/WORKSPACE_RULES.md, docs/WORKFLOW.md, SESSION_NOTES_CURRENT.md, docs/DOMAIN_STANDARD.md, README.md ก่อน
 ทำเฉพาะ bike-booking-saas
 ทำเสร็จสรุปสั้น ๆ แล้ว commit / push
 ```

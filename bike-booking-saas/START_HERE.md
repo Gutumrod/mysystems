@@ -9,7 +9,8 @@
 3. `docs/AGENT_START_END.md`
 4. `HANDOFF_TEMPLATE.md`
 5. `SESSION_NOTES_CURRENT.md`
-6. `README.md`
+6. `docs/DOMAIN_STANDARD.md`
+7. `README.md`
 
 ## หลังอ่านครบแล้ว ต้องทำอะไร
 
@@ -46,4 +47,3 @@
 ```text
 เปิด START_HERE.md ของโปรเจกต์ bike-booking-saas แล้วทำตามทีละข้อ
 ```
-

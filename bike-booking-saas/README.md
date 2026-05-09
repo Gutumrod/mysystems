@@ -12,7 +12,8 @@
 4. [docs/AGENT_START_END.md](docs/AGENT_START_END.md)
 5. [HANDOFF_TEMPLATE.md](HANDOFF_TEMPLATE.md)
 6. [SESSION_NOTES_CURRENT.md](SESSION_NOTES_CURRENT.md)
-7. [docs/POST_DEPLOY_CHECKLIST.md](docs/POST_DEPLOY_CHECKLIST.md)
+7. [docs/DOMAIN_STANDARD.md](docs/DOMAIN_STANDARD.md)
+8. [docs/POST_DEPLOY_CHECKLIST.md](docs/POST_DEPLOY_CHECKLIST.md)
 
 ## ขอบเขตของงาน
 
@@ -77,7 +78,8 @@ npm run dev:admin
 1. Push repo ไป GitHub
 2. สร้าง Vercel project แยก 2 ตัว โดยตั้ง Root Directory เป็น `apps/booking-consumer` และ `apps/booking-admin`
 3. ใส่ environment variables ของแต่ละ project
-4. Deploy เป็น `booking.craftbikelab.com` และ `booking-admin.craftbikelab.com` หรือโดเมน staging ที่ต้องการ
+4. Deploy ตามมาตรฐานโดเมนใน [docs/DOMAIN_STANDARD.md](docs/DOMAIN_STANDARD.md)
+5. ถ้าต้องการ staging หรือ tenant ตัวอย่าง ให้ map เพิ่มตามโครงเดียวกัน
 
 ## Notes
 
@@ -88,3 +90,4 @@ npm run dev:admin
 - Phase 1 ยังไม่มี LINE/Facebook API และ payment gateway
 - Phase ปัจจุบันใช้ `NEXT_PUBLIC_SHOP_ID` แบบต่อหนึ่ง deployment ต่อหนึ่งร้านอยู่ก่อน จนกว่าจะเปิดใช้ subdomain routing จริง
 - `booking-admin` มี route **CraftBike Command Center** เริ่มต้นที่ `/platform` สำหรับคุมหลายร้าน
+- มาตรฐานชื่อโดเมนและ flow สมัครร้านใหม่อธิบายไว้ใน [docs/DOMAIN_STANDARD.md](docs/DOMAIN_STANDARD.md)

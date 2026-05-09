@@ -8,8 +8,7 @@
 - ประเภท: ระบบจองคิวออนไลน์แบบ Multi-Tenant สำหรับร้านซ่อมและแต่งมอเตอร์ไซค์
 - ที่อยู่โปรเจคบนเครื่อง: `C:\Users\Win10\Documents\mysystems\bike-booking-saas`
 - ที่เก็บโค้ดหลัก: `https://github.com/Gutumrod/mysystems.git`
-- Production customer: `https://booking.craftbikelab.com`
-- Production admin: `https://booking-admin.craftbikelab.com/login`
+- มาตรฐานโดเมนของระบบ: [docs/DOMAIN_STANDARD.md](docs/DOMAIN_STANDARD.md)
 - Frontend แยกเป็น 2 แอป
   - `apps/booking-consumer` สำหรับลูกค้าจอง
   - `apps/booking-admin` สำหรับร้านจัดการคิว
