@@ -89,5 +89,5 @@ npm run dev:admin
 - Trigger ใน Postgres กันจองซ้ำและกันวันหยุด
 - Phase 1 ยังไม่มี LINE/Facebook API และ payment gateway
 - Phase ปัจจุบันใช้ `NEXT_PUBLIC_SHOP_ID` แบบต่อหนึ่ง deployment ต่อหนึ่งร้านอยู่ก่อน จนกว่าจะเปิดใช้ subdomain routing จริง
-- `booking-admin` มี route **CraftBike Command Center** เริ่มต้นที่ `/platform` สำหรับคุมหลายร้าน
+- `booking-admin` มี route **CraftBike Control Center** เริ่มต้นที่ `/platform` สำหรับคุมหลายร้าน และผูกโดเมนกลางที่ `control.craftbikelab.com`
 - มาตรฐานชื่อโดเมนและ flow สมัครร้านใหม่อธิบายไว้ใน [docs/DOMAIN_STANDARD.md](docs/DOMAIN_STANDARD.md)

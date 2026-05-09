@@ -37,8 +37,7 @@ const statusOptions: Array<{ value: BookingStatus | "all"; label: string }> = [
 ];
 
 export function PlatformAdminConsole({ shops, initialBookings, services }: Props) {
-  const preferredShop = shops.find((shop) => shop.slug === "kmorackbarcustom") ?? shops[0];
-  const [selectedShopId, setSelectedShopId] = useState<string>(preferredShop?.id ?? "all");
+  const [selectedShopId, setSelectedShopId] = useState<string>("all");
   const [shopQuery, setShopQuery] = useState("");
   const [bookingQuery, setBookingQuery] = useState("");
   const [date, setDate] = useState("");

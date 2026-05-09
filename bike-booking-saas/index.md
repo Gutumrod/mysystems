@@ -116,4 +116,4 @@ NEXT_PUBLIC_SHOP_ID=
 1. ปิดงานเก็บรายละเอียดของร้านจริงให้ครบ
 2. ทดสอบ booking หลายรอบและตรวจ dashboard admin
 3. ทำ onboarding สำหรับร้านใหม่ให้เป็นขั้นตอนเดียว
-4. ถ้าจะขยายหลาย SaaS ในโปรเจคเดียว ให้เพิ่ม CraftBike Command Center / super admin layer แยกจาก booking admin
+4. ถ้าจะขยายหลาย SaaS ในโปรเจคเดียว ให้เพิ่ม CraftBike Control Center / super admin layer แยกจาก booking admin
