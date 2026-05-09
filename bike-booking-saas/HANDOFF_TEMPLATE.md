@@ -9,10 +9,11 @@
 ที่อยู่โปรเจกต์: [path]
 
 ให้อ่านก่อน:
-1. docs/WORKSPACE_RULES.md
-2. docs/WORKFLOW.md
-3. SESSION_NOTES_CURRENT.md
-4. README.md
+1. START_HERE.md
+2. docs/WORKSPACE_RULES.md
+3. docs/WORKFLOW.md
+4. SESSION_NOTES_CURRENT.md
+5. README.md
 
 ขอบเขตงาน:
 - ทำเฉพาะ bike-booking-saas
@@ -52,8 +53,7 @@
 ## เวอร์ชันสั้นมาก
 
 ```text
-อ่าน docs/WORKSPACE_RULES.md, docs/WORKFLOW.md, SESSION_NOTES_CURRENT.md, README.md ก่อน
+อ่าน START_HERE.md, docs/WORKSPACE_RULES.md, docs/WORKFLOW.md, SESSION_NOTES_CURRENT.md, README.md ก่อน
 ทำเฉพาะ bike-booking-saas
 ทำเสร็จสรุปสั้น ๆ แล้ว commit / push
 ```
-

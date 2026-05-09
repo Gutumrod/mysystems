@@ -22,16 +22,17 @@
 
 ## เริ่มอ่านจากไหน
 
-1. อ่าน [docs/WORKSPACE_RULES.md](docs/WORKSPACE_RULES.md) ก่อน ถ้าจะสลับเครื่องหรือจะเริ่มงานใหม่
-2. อ่าน [README.md](README.md) ถ้าต้องการ setup / run / deploy แบบเร็ว
-3. อ่าน [docs/USER_GUIDE.md](docs/USER_GUIDE.md) ถ้าต้องการภาพรวมการใช้งานฝั่งลูกค้าและร้าน
-4. อ่าน [docs/API.md](docs/API.md) ถ้าต้องการดูสัญญา API หรือ flow สำคัญ
-5. อ่าน [docs/POST_DEPLOY_CHECKLIST.md](docs/POST_DEPLOY_CHECKLIST.md) ถ้าจะเช็คหลัง deploy
-6. อ่าน [docs/AGENT_START_END.md](docs/AGENT_START_END.md) ถ้าจะสั่ง Codex/Claude/Gemini ให้เริ่มงานและปิดงานแบบเดียวกัน
-7. อ่าน [HANDOFF_TEMPLATE.md](HANDOFF_TEMPLATE.md) ถ้าจะส่งงานข้ามเครื่องหรือข้าม agent
-8. อ่าน [SESSION_NOTES_CURRENT.md](SESSION_NOTES_CURRENT.md) ถ้าจะต่อจาก note ล่าสุด
-9. อ่าน [DEPLOY_PLAN.md](DEPLOY_PLAN.md) ถ้าจะตาม roadmap และขั้นตอนโครงสร้างระบบ
-10. อ่าน [MASTER BLUEPRINT - Bike Booking SaaS.md](MASTER%20BLUEPRINT%20-%20Bike%20Booking%20SaaS.md) ถ้าต้องการดูสเปกต้นฉบับทั้งหมด
+1. อ่าน [START_HERE.md](START_HERE.md) ก่อน ถ้าจะสลับเครื่องหรือจะเริ่มงานใหม่
+2. อ่าน [docs/WORKSPACE_RULES.md](docs/WORKSPACE_RULES.md) ถ้าจะสลับเครื่องหรือจะเริ่มงานใหม่
+3. อ่าน [README.md](README.md) ถ้าต้องการ setup / run / deploy แบบเร็ว
+4. อ่าน [docs/USER_GUIDE.md](docs/USER_GUIDE.md) ถ้าต้องการภาพรวมการใช้งานฝั่งลูกค้าและร้าน
+5. อ่าน [docs/API.md](docs/API.md) ถ้าต้องการดูสัญญา API หรือ flow สำคัญ
+6. อ่าน [docs/POST_DEPLOY_CHECKLIST.md](docs/POST_DEPLOY_CHECKLIST.md) ถ้าจะเช็คหลัง deploy
+7. อ่าน [docs/AGENT_START_END.md](docs/AGENT_START_END.md) ถ้าจะสั่ง Codex/Claude/Gemini ให้เริ่มงานและปิดงานแบบเดียวกัน
+8. อ่าน [HANDOFF_TEMPLATE.md](HANDOFF_TEMPLATE.md) ถ้าจะส่งงานข้ามเครื่องหรือข้าม agent
+9. อ่าน [SESSION_NOTES_CURRENT.md](SESSION_NOTES_CURRENT.md) ถ้าจะต่อจาก note ล่าสุด
+10. อ่าน [DEPLOY_PLAN.md](DEPLOY_PLAN.md) ถ้าจะตาม roadmap และขั้นตอนโครงสร้างระบบ
+11. อ่าน [MASTER BLUEPRINT - Bike Booking SaaS.md](MASTER%20BLUEPRINT%20-%20Bike%20Booking%20SaaS.md) ถ้าต้องการดูสเปกต้นฉบับทั้งหมด
 
 ## โครงสร้างหลัก
 

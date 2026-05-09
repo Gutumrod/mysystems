@@ -4,10 +4,11 @@
 
 ## ตอนเริ่มงาน ต้องอ่านตามลำดับนี้
 
-1. `docs/WORKSPACE_RULES.md`
-2. `docs/WORKFLOW.md`
-3. `SESSION_NOTES_CURRENT.md`
-4. `README.md`
+1. `START_HERE.md`
+2. `docs/WORKSPACE_RULES.md`
+3. `docs/WORKFLOW.md`
+4. `SESSION_NOTES_CURRENT.md`
+5. `README.md`
 
 อ่าน 4 ไฟล์นี้ก่อนเสมอ แล้วค่อยเริ่มทำงานต่อ
 
@@ -39,7 +40,7 @@
 ใช้ข้อความนี้เป็นแม่แบบได้:
 
 ```text
-ให้เปิด bike-booking-saas แล้วอ่าน docs/WORKSPACE_RULES.md, docs/WORKFLOW.md, SESSION_NOTES_CURRENT.md, README.md ก่อน
+ให้เปิด bike-booking-saas แล้วอ่าน START_HERE.md, docs/WORKSPACE_RULES.md, docs/WORKFLOW.md, SESSION_NOTES_CURRENT.md, README.md ก่อน
 จากนั้น git pull origin main
 เช็ก git status --short
 แล้วค่อยทำงานต่อจาก session ล่าสุด

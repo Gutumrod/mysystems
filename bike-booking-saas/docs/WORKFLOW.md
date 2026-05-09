@@ -7,7 +7,7 @@
 - งาน active ของรอบนี้คือ `bike-booking-saas`
 - `Chatbot/` ที่อยู่ระดับ repo เดียวกันเป็นโปรเจกต์แยก
 - ถ้าไม่ได้สั่งชัดเจน ให้ ignore `Chatbot/` ไปเลย
-- เวลาย้ายเครื่อง ให้เปิด `SESSION_NOTES_CURRENT.md` แล้วค่อยเริ่มจากตรงนั้น
+- เวลาย้ายเครื่อง ให้เปิด `START_HERE.md` แล้วค่อยเริ่มจากตรงนั้น
 
 ## เป้าหมาย
 
@@ -37,11 +37,12 @@
 
 ### 1) เริ่มงาน
 
-1. เปิดโฟลเดอร์ Drive ของโปรเจค
-2. อ่าน `SESSION_NOTES_CURRENT.md` ก่อนเสมอ
-3. อ่าน `docs/WORKSPACE_RULES.md`
-4. อ่าน `README.md`, `docs/ONBOARDING_*.md`, หรือ `docs/LAUNCH_CHECKLIST_*.md` ที่เกี่ยวข้อง
-5. เช็กว่าไฟล์ที่กำลังจะทำไม่ชนกับรอบก่อน
+1. เปิด `START_HERE.md`
+2. เปิดโฟลเดอร์ Drive ของโปรเจค
+3. อ่าน `SESSION_NOTES_CURRENT.md` ก่อนเสมอ
+4. อ่าน `docs/WORKSPACE_RULES.md`
+5. อ่าน `README.md`, `docs/ONBOARDING_*.md`, หรือ `docs/LAUNCH_CHECKLIST_*.md` ที่เกี่ยวข้อง
+6. เช็กว่าไฟล์ที่กำลังจะทำไม่ชนกับรอบก่อน
 
 ### 2) ระหว่างทำงาน
 

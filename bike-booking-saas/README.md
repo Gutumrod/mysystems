@@ -6,12 +6,13 @@
 
 ถ้าจะทำงานต่อจากเครื่องไหนก็ตาม ให้เปิดไฟล์นี้ตามลำดับ:
 
-1. [docs/WORKSPACE_RULES.md](docs/WORKSPACE_RULES.md)
-2. [docs/WORKFLOW.md](docs/WORKFLOW.md)
-3. [docs/AGENT_START_END.md](docs/AGENT_START_END.md)
-4. [HANDOFF_TEMPLATE.md](HANDOFF_TEMPLATE.md)
-5. [SESSION_NOTES_CURRENT.md](SESSION_NOTES_CURRENT.md)
-6. [docs/POST_DEPLOY_CHECKLIST.md](docs/POST_DEPLOY_CHECKLIST.md)
+1. [START_HERE.md](START_HERE.md)
+2. [docs/WORKSPACE_RULES.md](docs/WORKSPACE_RULES.md)
+3. [docs/WORKFLOW.md](docs/WORKFLOW.md)
+4. [docs/AGENT_START_END.md](docs/AGENT_START_END.md)
+5. [HANDOFF_TEMPLATE.md](HANDOFF_TEMPLATE.md)
+6. [SESSION_NOTES_CURRENT.md](SESSION_NOTES_CURRENT.md)
+7. [docs/POST_DEPLOY_CHECKLIST.md](docs/POST_DEPLOY_CHECKLIST.md)
 
 ## ขอบเขตของงาน
 

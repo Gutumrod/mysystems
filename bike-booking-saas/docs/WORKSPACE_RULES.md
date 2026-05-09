@@ -11,6 +11,7 @@
 ## สิ่งที่ถือเป็น source of truth
 
 - โค้ดจริง: GitHub `main`
+- จุดเริ่มงาน: `START_HERE.md`
 - สถานะงาน: `SESSION_NOTES_CURRENT.md`
 - ข้อมูลวิธีทำงาน: `docs/WORKFLOW.md`
 - แม่แบบส่งงาน: `HANDOFF_TEMPLATE.md`
@@ -18,12 +19,13 @@
 
 ## เริ่มงานบนเครื่องใหม่
 
-1. เปิด repo ที่ `mysystems`
-2. `git pull origin main`
-3. เข้า `bike-booking-saas`
-4. เปิด `SESSION_NOTES_CURRENT.md`
-5. ตรวจ `git status --short`
-6. ถ้าต้องทำงานต่อ ให้ `npm install` และรัน workspace commands ของโปรเจกต์นี้เท่านั้น
+1. เปิด `START_HERE.md`
+2. เปิด repo ที่ `mysystems`
+3. `git pull origin main`
+4. เข้า `bike-booking-saas`
+5. เปิด `SESSION_NOTES_CURRENT.md`
+6. ตรวจ `git status --short`
+7. ถ้าต้องทำงานต่อ ให้ `npm install` และรัน workspace commands ของโปรเจกต์นี้เท่านั้น
 
 ## กติกาเวลาแก้โค้ด
 
@@ -45,7 +47,8 @@ npm --workspace apps/booking-admin run build
 
 ## ลำดับอ้างอิงเวลางง
 
-1. `SESSION_NOTES_CURRENT.md`
-2. `docs/WORKFLOW.md`
-3. `docs/POST_DEPLOY_CHECKLIST.md`
-4. `README.md`
+1. `START_HERE.md`
+2. `SESSION_NOTES_CURRENT.md`
+3. `docs/WORKFLOW.md`
+4. `docs/POST_DEPLOY_CHECKLIST.md`
+5. `README.md`
