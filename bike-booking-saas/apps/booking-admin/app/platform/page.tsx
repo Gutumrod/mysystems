@@ -1,23 +1,10 @@
 import { redirect } from "next/navigation";
 import { BarChart3, Building2, Shield, Store } from "lucide-react";
+import { PlatformAdminConsole, type PlatformShop } from "@/components/platform/PlatformAdminConsole";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { hasSupabaseEnv } from "@/lib/mock-data";
-
-type ShopRow = {
-  id: string;
-  slug: string;
-  name: string;
-  phone: string | null;
-  line_id: string | null;
-  facebook_url: string | null;
-  subscription_status: "trial" | "active" | "suspended" | "cancelled";
-  created_at: string;
-};
-
-type BookingRow = {
-  shop_id: string;
-};
+import type { Booking, ServiceItem } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -60,28 +47,34 @@ export default async function PlatformPage() {
     .from("shops")
     .select("*")
     .order("created_at", { ascending: false })
-    .returns<ShopRow[]>();
+    .returns<PlatformShop[]>();
 
   const shopRows = shops ?? [];
-  const bookingCounts = await Promise.all(
-    shopRows.map(async (shop) => {
-      const { count } = await supabase
-        .schema("bike_booking")
-        .from("bookings")
-        .select("id", { count: "exact", head: true })
-        .eq("shop_id", shop.id);
-
-      return { shop_id: shop.id, count: count ?? 0 } satisfies BookingRow & { count: number };
-    })
-  );
+  const [{ data: bookings }, { data: services }] = await Promise.all([
+    supabase
+      .schema("bike_booking")
+      .from("bookings")
+      .select("*")
+      .order("booking_date", { ascending: false })
+      .order("booking_time_start", { ascending: false, nullsFirst: false })
+      .limit(1000)
+      .returns<Booking[]>(),
+    supabase
+      .schema("bike_booking")
+      .from("service_items")
+      .select("*")
+      .order("sort_order")
+      .returns<ServiceItem[]>()
+  ]);
+  const bookingRows = bookings ?? [];
   const totalShops = shopRows.length;
   const activeShops = shopRows.filter((shop) => shop.subscription_status === "active").length;
   const suspendedShops = shopRows.filter((shop) => shop.subscription_status === "suspended").length;
-  const totalBookings = bookingCounts.reduce((sum, row) => sum + row.count, 0);
+  const totalBookings = bookingRows.length;
 
   const bookingCountByShop = new Map<string, number>();
-  for (const booking of bookingCounts) {
-    bookingCountByShop.set(booking.shop_id, booking.count);
+  for (const booking of bookingRows) {
+    bookingCountByShop.set(booking.shop_id, (bookingCountByShop.get(booking.shop_id) ?? 0) + 1);
   }
 
   return (
@@ -93,7 +86,7 @@ export default async function PlatformPage() {
         </div>
         <h1 className="text-3xl font-bold">ศูนย์กลางคุมหลายร้าน</h1>
         <p className="max-w-2xl text-sm text-muted-foreground">
-          ใช้หน้านี้ดูภาพรวมของร้านทั้งหมด และเป็นจุดเริ่มต้นสำหรับการจัดการสิทธิ์ร้านใหม่แบบ 1 ร้าน = 1 owner
+          ใช้หน้านี้เลือกร้านจากชื่อ, slug หรือ UUID แล้วเปิดดู แก้สถานะ แก้วันนัด และลบ booking แทนร้านได้ทันที
         </p>
       </header>
 
@@ -137,6 +130,8 @@ export default async function PlatformPage() {
           </table>
         </CardContent>
       </Card>
+
+      <PlatformAdminConsole shops={shopRows} initialBookings={bookingRows} services={services ?? []} />
     </main>
   );
 }
