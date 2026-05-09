@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { BookingDetailDialog } from "@/components/bookings/BookingDetailDialog";
 import { createBrowserClient } from "@/lib/supabase/client";
 import type { Booking, BookingStatus, ServiceItem } from "@/lib/types";
 import { formatBookingSchedule, isBookingActiveOnDate, serviceNames, statusClass, statusLabel } from "@/lib/utils";
@@ -22,6 +23,7 @@ export function TodayBoard({ initialBookings, services, shopId, today, demoMode 
   const supabase = useMemo(() => (demoMode ? null : createBrowserClient()), [demoMode]);
   const [bookings, setBookings] = useState(initialBookings);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
 
   const reload = useCallback(async () => {
     if (!supabase) return;
@@ -150,11 +152,32 @@ export function TodayBoard({ initialBookings, services, shopId, today, demoMode 
                   <XCircle className="size-4" />
                   ยกเลิก
                 </Button>
+                <Button size="sm" variant="outline" disabled={savingId === booking.id} onClick={() => setSelectedBooking(booking)}>
+                  ดู/แก้ไข
+                </Button>
               </div>
             </div>
           ))}
         </CardContent>
       </Card>
+
+      <BookingDetailDialog
+        booking={selectedBooking}
+        services={services}
+        open={Boolean(selectedBooking)}
+        demoMode={demoMode}
+        onOpenChange={(open) => {
+          if (!open) setSelectedBooking(null);
+        }}
+        onUpdated={(updated) => {
+          setBookings((items) => items.map((item) => (item.id === updated.id ? updated : item)));
+          setSelectedBooking(updated);
+        }}
+        onDeleted={(deletedId) => {
+          setBookings((items) => items.filter((item) => item.id !== deletedId));
+          setSelectedBooking(null);
+        }}
+      />
     </div>
   );
 }

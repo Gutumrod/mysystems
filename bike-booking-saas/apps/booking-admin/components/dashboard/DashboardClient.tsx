@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { BookingDetailDialog } from "@/components/bookings/BookingDetailDialog";
 import { createBrowserClient } from "@/lib/supabase/client";
 import type { Booking, BookingStatus, ServiceItem } from "@/lib/types";
 import { bookingStats, formatBangkokISODate, formatBookingSchedule, isBookingActiveOnDate, serviceNames, statusClass, statusLabel } from "@/lib/utils";
@@ -20,6 +21,7 @@ export function DashboardClient({ initialBookings, services, shopId, demoMode = 
   const supabase = useMemo(() => (demoMode ? null : createBrowserClient()), [demoMode]);
   const [bookings, setBookings] = useState(initialBookings);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const stats = bookingStats(bookings);
   const today = formatBangkokISODate();
   const todayBookings = bookings
@@ -126,11 +128,30 @@ export function DashboardClient({ initialBookings, services, shopId, demoMode = 
                 <Button size="sm" disabled={savingId === booking.id} onClick={() => updateStatus(booking.id, "completed")}>ทำเสร็จ</Button>
                 <Button size="sm" variant="destructive" disabled={savingId === booking.id} onClick={() => updateStatus(booking.id, "cancelled")}>ยกเลิก</Button>
                 <Button size="sm" variant="ghost" disabled={savingId === booking.id} onClick={() => markNoShow(booking.id)}>No-show</Button>
+                <Button size="sm" variant="outline" disabled={savingId === booking.id} onClick={() => setSelectedBooking(booking)}>ดู/แก้ไข</Button>
               </div>
             </div>
           ))}
         </CardContent>
       </Card>
+
+      <BookingDetailDialog
+        booking={selectedBooking}
+        services={services}
+        open={Boolean(selectedBooking)}
+        demoMode={demoMode}
+        onOpenChange={(open) => {
+          if (!open) setSelectedBooking(null);
+        }}
+        onUpdated={(updated) => {
+          setBookings((items) => items.map((item) => (item.id === updated.id ? updated : item)));
+          setSelectedBooking(updated);
+        }}
+        onDeleted={(deletedId) => {
+          setBookings((items) => items.filter((item) => item.id !== deletedId));
+          setSelectedBooking(null);
+        }}
+      />
     </div>
   );
 }

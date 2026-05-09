@@ -249,6 +249,38 @@ for each row
 when (old.status is distinct from new.status)
 execute function bike_booking.sync_customer_stats_on_status_change();
 
+create or replace function bike_booking.sync_customer_stats_on_delete()
+returns trigger
+language plpgsql
+security definer
+set search_path = bike_booking, public
+as $$
+declare
+  next_no_show_count int;
+begin
+  update bike_booking.customers
+  set
+    total_bookings = greatest(total_bookings - case when old.status <> 'cancelled' then 1 else 0 end, 0),
+    no_show_count = greatest(no_show_count - case when old.status = 'no_show' then 1 else 0 end, 0)
+  where shop_id = old.shop_id and phone = old.customer_phone
+  returning no_show_count into next_no_show_count;
+
+  if found then
+    update bike_booking.customers
+    set
+      is_blacklisted = next_no_show_count >= 3,
+      blacklist_reason = case when next_no_show_count >= 3 then coalesce(blacklist_reason, 'no_show threshold met') else null end
+    where shop_id = old.shop_id and phone = old.customer_phone;
+  end if;
+
+  return old;
+end;
+$$;
+
+create trigger bookings_sync_customer_delete
+after delete on bike_booking.bookings
+for each row execute function bike_booking.sync_customer_stats_on_delete();
+
 create or replace function bike_booking.mark_booking_no_show(target_booking_id uuid)
 returns void
 language plpgsql
@@ -339,6 +371,9 @@ for select using (bike_booking.is_shop_admin(shop_id));
 create policy "Admins manage own bookings" on bike_booking.bookings
 for update using (bike_booking.is_shop_admin(shop_id)) with check (bike_booking.is_shop_admin(shop_id));
 
+create policy "Admins delete own bookings" on bike_booking.bookings
+for delete using (bike_booking.is_shop_admin(shop_id));
+
 create policy "Admins can read customers" on bike_booking.customers
 for select using (bike_booking.is_shop_admin(shop_id));
 
@@ -354,7 +389,7 @@ for all using (bike_booking.is_shop_admin(shop_id)) with check (bike_booking.is_
 grant usage on schema bike_booking to anon, authenticated;
 grant select on bike_booking.shops, bike_booking.service_items, bike_booking.shop_holidays, bike_booking.public_booking_slots to anon, authenticated;
 grant insert, select on bike_booking.bookings to anon, authenticated;
-grant select, update on bike_booking.bookings to authenticated;
+grant select, update, delete on bike_booking.bookings to authenticated;
 grant select, insert, update, delete on bike_booking.service_items, bike_booking.shop_holidays to authenticated;
 grant select, update on bike_booking.shops, bike_booking.customers to authenticated;
 grant select on bike_booking.shop_users to authenticated;
