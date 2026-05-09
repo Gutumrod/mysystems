@@ -52,7 +52,7 @@
 - ให้ทำแบบ manual ใน Supabase SQL Editor
 - ให้ใช้ `shop_users` ผูก owner กับร้านทีละร้าน
 - ให้เก็บ mapping ร้านกับ domain ไว้ในโน้ต/สเปรดชีตชั่วคราว
-- เมื่อพร้อมค่อยย้ายไปทำ platform admin แบบรวมศูนย์
+- เมื่อพร้อมค่อยย้ายไปทำ CraftBike Command Center แบบรวมศูนย์
 
 ## ลำดับงานแนะนำ
 

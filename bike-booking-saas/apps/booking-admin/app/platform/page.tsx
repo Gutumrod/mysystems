@@ -14,10 +14,10 @@ export default async function PlatformPage() {
       <main className="mx-auto flex min-h-screen max-w-4xl items-center px-4">
         <Card className="w-full">
           <CardHeader>
-            <CardTitle>Platform admin</CardTitle>
+            <CardTitle>CraftBike Command Center</CardTitle>
           </CardHeader>
           <CardContent className="text-sm text-muted-foreground">
-            ตั้งค่า Supabase environment ก่อน ระบบจะใช้หน้านี้เป็นศูนย์กลางคุมหลายร้าน
+            ตั้งค่า Supabase environment ก่อน ระบบจะใช้หน้านี้เป็นศูนย์กลาง CraftBike Command Center สำหรับคุมหลายร้าน
           </CardContent>
         </Card>
       </main>
@@ -82,9 +82,9 @@ export default async function PlatformPage() {
       <header className="flex flex-col gap-2">
         <div className="inline-flex w-fit items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-xs font-medium text-muted-foreground">
           <Shield className="size-3.5" />
-          Platform Admin
+          CraftBike Command Center
         </div>
-        <h1 className="text-3xl font-bold">ศูนย์กลางคุมหลายร้าน</h1>
+        <h1 className="text-3xl font-bold">CraftBike Command Center</h1>
         <p className="max-w-2xl text-sm text-muted-foreground">
           ใช้หน้านี้เลือกร้านจากชื่อ, slug หรือ UUID แล้วเปิดดู แก้สถานะ แก้วันนัด และลบ booking แทนร้านได้ทันที
         </p>
