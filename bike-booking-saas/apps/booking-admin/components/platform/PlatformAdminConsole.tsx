@@ -1,12 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Search, Store, Trash2 } from "lucide-react";
+import { Save, Search, Shield, Store, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import { BookingDetailDialog } from "@/components/bookings/BookingDetailDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { createBrowserClient } from "@/lib/supabase/client";
 import type { Booking, BookingStatus, ServiceItem } from "@/lib/types";
 import { bookingViewKindLabel, formatBookingSchedule, serviceNames, statusClass, statusLabel } from "@/lib/utils";
 
@@ -37,15 +39,21 @@ const statusOptions: Array<{ value: BookingStatus | "all"; label: string }> = [
 ];
 
 export function PlatformAdminConsole({ shops, initialBookings, services }: Props) {
+  const supabase = useMemo(() => createBrowserClient(), []);
   const [selectedShopId, setSelectedShopId] = useState<string>("all");
   const [shopQuery, setShopQuery] = useState("");
   const [bookingQuery, setBookingQuery] = useState("");
   const [date, setDate] = useState("");
   const [status, setStatus] = useState<BookingStatus | "all">("all");
   const [bookings, setBookings] = useState(initialBookings);
+  const [shopRows, setShopRows] = useState(shops);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [savingShopId, setSavingShopId] = useState<string | null>(null);
+  const [shopStatusDraft, setShopStatusDraft] = useState<Record<string, PlatformShop["subscription_status"]>>(
+    Object.fromEntries(shops.map((shop) => [shop.id, shop.subscription_status])) as Record<string, PlatformShop["subscription_status"]>
+  );
 
-  const shopById = useMemo(() => new Map(shops.map((shop) => [shop.id, shop])), [shops]);
+  const shopById = useMemo(() => new Map(shopRows.map((shop) => [shop.id, shop])), [shopRows]);
   const bookingCountByShop = useMemo(() => {
     const counts = new Map<string, number>();
     for (const booking of bookings) {
@@ -54,12 +62,37 @@ export function PlatformAdminConsole({ shops, initialBookings, services }: Props
     return counts;
   }, [bookings]);
 
-  const filteredShops = shops.filter((shop) => {
+  const filteredShops = shopRows.filter((shop) => {
     const haystack = [shop.name, shop.slug, shop.id, shop.phone ?? "", shop.line_id ?? ""].join(" ").toLowerCase();
     return haystack.includes(shopQuery.toLowerCase());
   });
 
   const selectedShop = selectedShopId === "all" ? null : shopById.get(selectedShopId) ?? null;
+
+  async function saveShopStatus(shop: PlatformShop) {
+    const nextStatus = shopStatusDraft[shop.id] ?? shop.subscription_status;
+    if (nextStatus === shop.subscription_status) {
+      toast.message("สถานะเดิมอยู่แล้ว");
+      return;
+    }
+
+    setSavingShopId(shop.id);
+    const { error } = await supabase
+      .schema("bike_booking")
+      .from("shops")
+      .update({ subscription_status: nextStatus })
+      .eq("id", shop.id);
+    setSavingShopId(null);
+
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+
+    setShopRows((items) => items.map((item) => (item.id === shop.id ? { ...item, subscription_status: nextStatus } : item)));
+    toast.success(`อัปเดตสถานะร้านเป็น ${nextStatus} แล้ว`);
+  }
+
   const visibleBookings = bookings.filter((booking) => {
     const shop = shopById.get(booking.shop_id);
     const servicesText = serviceNames(booking.service_items, services).join(" ");
@@ -147,6 +180,46 @@ export function PlatformAdminConsole({ shops, initialBookings, services }: Props
             <Info label="LINE" value={selectedShop?.line_id ?? "-"} />
           </CardContent>
         </Card>
+
+        {selectedShop ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>จัดการร้านที่เลือก</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-3">
+              <div className="grid gap-3 md:grid-cols-2">
+                <div className="rounded-md border bg-muted/40 p-3">
+                  <p className="text-xs uppercase text-muted-foreground">สถานะปัจจุบัน</p>
+                  <p className="mt-1 font-medium capitalize">{selectedShop.subscription_status}</p>
+                </div>
+                <div className="rounded-md border bg-muted/40 p-3">
+                  <p className="text-xs uppercase text-muted-foreground">public booking</p>
+                  <p className="mt-1 font-medium">
+                    {selectedShop.subscription_status === "active" || selectedShop.subscription_status === "trial" ? "เปิด" : "ปิด"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                {(["trial", "active", "suspended", "cancelled"] as const).map((nextStatus) => (
+                  <Button
+                    key={nextStatus}
+                    type="button"
+                    variant={selectedShop.subscription_status === nextStatus ? "default" : "outline"}
+                    disabled={savingShopId === selectedShop.id}
+                    onClick={() => {
+                      setShopStatusDraft((items) => ({ ...items, [selectedShop.id]: nextStatus }));
+                      void saveShopStatus({ ...selectedShop, subscription_status: nextStatus });
+                    }}
+                  >
+                    {savingShopId === selectedShop.id ? <Shield className="size-3.5 animate-pulse" /> : <Save className="size-3.5" />}
+                    ตั้งเป็น {nextStatus}
+                  </Button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        ) : null}
 
         <Card>
           <CardHeader>

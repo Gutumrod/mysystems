@@ -4,7 +4,7 @@
 
 ## เวอร์ชันล่าสุด
 
-- [SESSION_NOTES_V47.md](SESSION_NOTES_V47.md)
+- [SESSION_NOTES_V48.md](SESSION_NOTES_V48.md)
 
 ## กติกา
 
