@@ -11,7 +11,7 @@
 ## สิ่งที่ถือเป็น source of truth
 
 - โค้ดจริง: GitHub `main`
-- สถานะงาน: `SESSION_NOTES_V36.md` และเวอร์ชันล่าสุดถัดไป
+- สถานะงาน: `SESSION_NOTES_V37.md` และเวอร์ชันล่าสุดถัดไป
 - ข้อมูลวิธีทำงาน: `docs/WORKFLOW.md`
 - เช็กลิสต์ปล่อยงาน: `docs/POST_DEPLOY_CHECKLIST.md`
 
@@ -20,7 +20,7 @@
 1. เปิด repo ที่ `mysystems`
 2. `git pull origin main`
 3. เข้า `bike-booking-saas`
-4. เปิด `SESSION_NOTES_V36.md`
+4. เปิด `SESSION_NOTES_V37.md`
 5. ตรวจ `git status --short`
 6. ถ้าต้องทำงานต่อ ให้ `npm install` และรัน workspace commands ของโปรเจกต์นี้เท่านั้น
 
@@ -44,8 +44,7 @@ npm --workspace apps/booking-admin run build
 
 ## ลำดับอ้างอิงเวลางง
 
-1. `SESSION_NOTES_V36.md`
+1. `SESSION_NOTES_V37.md`
 2. `docs/WORKFLOW.md`
 3. `docs/POST_DEPLOY_CHECKLIST.md`
 4. `README.md`
-

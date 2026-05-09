@@ -106,7 +106,7 @@ NEXT_PUBLIC_SHOP_ID=
 - time slot ต้อง filter ตาม `booking_date`
 - ถ้าจะเพิ่มร้านใหม่ ต้องเตรียม shop row, service items, user mapping และ domain/env ให้ครบ
 - รอบล่าสุดเพิ่ม edit/delete booking flow แล้ว
-- ถ้าย้ายเครื่อง ให้ pull `main` ล่าสุดก่อนเริ่ม แล้วเปิด `SESSION_NOTES_V36.md`
+- ถ้าย้ายเครื่อง ให้ pull `main` ล่าสุดก่อนเริ่ม แล้วเปิด `SESSION_NOTES_V37.md`
 
 ## เส้นทางถัดไปที่แนะนำ
 
