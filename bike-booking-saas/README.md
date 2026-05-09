@@ -2,7 +2,22 @@
 
 ระบบจองคิวออนไลน์แบบ Multi-Tenant สำหรับร้านซ่อม/แต่งมอเตอร์ไซค์ ใช้ Next.js 15, Supabase และ Vercel
 
-## โครงสร้าง
+## เริ่มตรงไหน
+
+ถ้าจะทำงานต่อจากเครื่องไหนก็ตาม ให้เปิดไฟล์นี้ตามลำดับ:
+
+1. [docs/WORKSPACE_RULES.md](docs/WORKSPACE_RULES.md)
+2. [docs/WORKFLOW.md](docs/WORKFLOW.md)
+3. [SESSION_NOTES_V36.md](SESSION_NOTES_V36.md)
+4. [docs/POST_DEPLOY_CHECKLIST.md](docs/POST_DEPLOY_CHECKLIST.md)
+
+## ขอบเขตของงาน
+
+- โปรเจกต์ active คือ `bike-booking-saas`
+- `Chatbot/` ที่อยู่ระดับ repo เดียวกันเป็นงานแยก
+- ถ้าไม่ได้สั่งชัดเจน ให้ทำงานเฉพาะ `bike-booking-saas`
+
+## โครงสร้างหลัก
 
 - `apps/booking-consumer` หน้า booking สำหรับลูกค้า
 - `apps/booking-admin` หน้า admin สำหรับร้าน

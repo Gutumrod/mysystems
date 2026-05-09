@@ -2,6 +2,13 @@
 
 เอกสารนี้คือ workflow กลางของโปรเจค `bike-booking-saas` สำหรับใช้ทำงานแบบ Drive-first แล้วค่อยอัปเดต Git/GitHub ทีหลัง
 
+## ขอบเขตที่ต้องยึด
+
+- งาน active ของรอบนี้คือ `bike-booking-saas`
+- `Chatbot/` ที่อยู่ระดับ repo เดียวกันเป็นโปรเจกต์แยก
+- ถ้าไม่ได้สั่งชัดเจน ให้ ignore `Chatbot/` ไปเลย
+- เวลาย้ายเครื่อง ให้เปิด `SESSION_NOTES_V36.md` แล้วค่อยเริ่มจากตรงนั้น
+
 ## เป้าหมาย
 
 - ใช้ `X:\My Drive\workspace\AI-Project\bike-booking-saas` เป็นพื้นที่กลางของงาน
@@ -32,7 +39,8 @@
 
 1. เปิดโฟลเดอร์ Drive ของโปรเจค
 2. อ่าน `SESSION_NOTES` ล่าสุดก่อนเสมอ
-3. อ่าน `docs/README.md`, `docs/ONBOARDING_*.md`, หรือ `docs/LAUNCH_CHECKLIST_*.md` ที่เกี่ยวข้อง
+3. อ่าน `docs/WORKSPACE_RULES.md`
+4. อ่าน `README.md`, `docs/ONBOARDING_*.md`, หรือ `docs/LAUNCH_CHECKLIST_*.md` ที่เกี่ยวข้อง
 4. เช็กว่าไฟล์ที่กำลังจะทำไม่ชนกับรอบก่อน
 
 ### 2) ระหว่างทำงาน
@@ -108,6 +116,7 @@
 - ใช้ Google Drive for Desktop เป็น mount เดียวกับโฟลเดอร์งาน
 - เปิดโปรเจคจาก path เดิมทุกครั้ง
 - ถ้าย้ายเครื่อง ให้รอ sync ให้ครบก่อนเริ่มรอบใหม่
+- ถ้า repo root มีหลายโปรเจกต์ ให้เข้า `bike-booking-saas` ก่อนเสมอ และอย่าแตะ `Chatbot/` ถ้าไม่ใช่งานนั้น
 
 ## ใช้บน Windows
 
@@ -122,4 +131,3 @@
 - [ ] git status สะอาด หรือรู้ว่ามีอะไรค้างอยู่
 - [ ] session notes อัปเดตแล้ว
 - [ ] commit / push ถ้าเป็นรอบที่พร้อมส่งต่อ
-

@@ -22,12 +22,13 @@
 
 ## เริ่มอ่านจากไหน
 
-1. อ่าน [README.md](README.md) ถ้าต้องการ setup / run / deploy แบบเร็ว
-2. อ่าน [docs/USER_GUIDE.md](docs/USER_GUIDE.md) ถ้าต้องการภาพรวมการใช้งานฝั่งลูกค้าและร้าน
-3. อ่าน [docs/API.md](docs/API.md) ถ้าต้องการดูสัญญา API หรือ flow สำคัญ
-4. อ่าน [docs/POST_DEPLOY_CHECKLIST.md](docs/POST_DEPLOY_CHECKLIST.md) ถ้าจะเช็คหลัง deploy
-5. อ่าน [DEPLOY_PLAN.md](DEPLOY_PLAN.md) ถ้าจะตาม roadmap และขั้นตอนโครงสร้างระบบ
-6. อ่าน [MASTER BLUEPRINT - Bike Booking SaaS.md](MASTER%20BLUEPRINT%20-%20Bike%20Booking%20SaaS.md) ถ้าต้องการดูสเปกต้นฉบับทั้งหมด
+1. อ่าน [docs/WORKSPACE_RULES.md](docs/WORKSPACE_RULES.md) ก่อน ถ้าจะสลับเครื่องหรือจะเริ่มงานใหม่
+2. อ่าน [README.md](README.md) ถ้าต้องการ setup / run / deploy แบบเร็ว
+3. อ่าน [docs/USER_GUIDE.md](docs/USER_GUIDE.md) ถ้าต้องการภาพรวมการใช้งานฝั่งลูกค้าและร้าน
+4. อ่าน [docs/API.md](docs/API.md) ถ้าต้องการดูสัญญา API หรือ flow สำคัญ
+5. อ่าน [docs/POST_DEPLOY_CHECKLIST.md](docs/POST_DEPLOY_CHECKLIST.md) ถ้าจะเช็คหลัง deploy
+6. อ่าน [DEPLOY_PLAN.md](DEPLOY_PLAN.md) ถ้าจะตาม roadmap และขั้นตอนโครงสร้างระบบ
+7. อ่าน [MASTER BLUEPRINT - Bike Booking SaaS.md](MASTER%20BLUEPRINT%20-%20Bike%20Booking%20SaaS.md) ถ้าต้องการดูสเปกต้นฉบับทั้งหมด
 
 ## โครงสร้างหลัก
 
@@ -35,6 +36,11 @@
 
 - [apps/booking-consumer](apps/booking-consumer) หน้า booking ของลูกค้า
 - [apps/booking-admin](apps/booking-admin) หน้า admin ของร้าน
+
+### ขอบเขตงาน
+
+- [docs/WORKSPACE_RULES.md](docs/WORKSPACE_RULES.md) อธิบายว่าต้องทำงานเฉพาะ `bike-booking-saas`
+- โฟลเดอร์ `Chatbot/` ที่อยู่ระดับ repo เดียวกันเป็นงานแยก อย่าเอามาปนกับงานนี้
 
 ### Supabase
 
@@ -99,6 +105,8 @@ NEXT_PUBLIC_SHOP_ID=
 - booking flow ใช้ RPC-first แล้ว
 - time slot ต้อง filter ตาม `booking_date`
 - ถ้าจะเพิ่มร้านใหม่ ต้องเตรียม shop row, service items, user mapping และ domain/env ให้ครบ
+- รอบล่าสุดเพิ่ม edit/delete booking flow แล้ว
+- ถ้าย้ายเครื่อง ให้ pull `main` ล่าสุดก่อนเริ่ม แล้วเปิด `SESSION_NOTES_V36.md`
 
 ## เส้นทางถัดไปที่แนะนำ
 
