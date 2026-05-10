@@ -33,7 +33,7 @@
 
 ## commit ล่าสุด
 
-- `5efbae2 docs: add today plan for four-phase platform work`
+- `0052199 feat: add control center activity audit trail`
 
 ## ข้อควรระวัง
 
@@ -44,4 +44,3 @@
 
 - Codex เครื่องถัดไป
 - เจ้าของระบบ CraftBike
-
