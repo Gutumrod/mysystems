@@ -4,7 +4,7 @@ import { PlatformAdminConsole, type PlatformShop } from "@/components/platform/P
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { hasSupabaseEnv } from "@/lib/mock-data";
-import type { Booking, PlatformActivityLog, ServiceItem, ShopBillingEvent } from "@/lib/types";
+import type { Booking, PlatformActivityLog, ServiceItem, ShopBillingEvent, SignupRequest } from "@/lib/types";
 import { formatBangkokISODate, formatThaiDate, getBangkokISODateOffset, getShopBillingHealth } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -58,7 +58,7 @@ export default async function PlatformPage() {
     const bHealth = getShopBillingHealth(b, today);
     return aHealth.sortRank - bHealth.sortRank || a.name.localeCompare(b.name, "th");
   });
-  const [{ data: bookings }, { data: services }, { data: activityLogs }, { data: billingEvents }] = await Promise.all([
+  const [{ data: bookings }, { data: services }, { data: activityLogs }, { data: billingEvents }, { data: signupRequests }] = await Promise.all([
     supabase
       .schema("bike_booking")
       .from("bookings")
@@ -86,11 +86,19 @@ export default async function PlatformPage() {
       .select("*")
       .order("created_at", { ascending: false })
       .limit(20)
-      .returns<ShopBillingEvent[]>()
+      .returns<ShopBillingEvent[]>(),
+    supabase
+      .schema("bike_booking")
+      .from("signup_requests")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(50)
+      .returns<SignupRequest[]>()
   ]);
   const bookingRows = bookings ?? [];
   const activityRows = activityLogs ?? [];
   const billingRows = billingEvents ?? [];
+  const signupRows = signupRequests ?? [];
   const totalShops = shopRows.length;
   const activeShops = shopRows.filter((shop) => shop.subscription_status === "active").length;
   const suspendedShops = shopRows.filter((shop) => shop.subscription_status === "suspended").length;
@@ -99,6 +107,7 @@ export default async function PlatformPage() {
   const expiredShops = shopRows.filter((shop) => Boolean(shop.expires_at && shop.expires_at < today)).length;
   const unbilledShops = shopRows.filter((shop) => !shop.billing_plan && !shop.billing_due_date && !shop.expires_at).length;
   const totalBookings = bookingRows.length;
+  const pendingSignupRequests = signupRows.filter((request) => request.status === "pending").length;
 
   const bookingCountByShop = new Map<string, number>();
   for (const booking of bookingRows) {
@@ -125,11 +134,12 @@ export default async function PlatformPage() {
         <Stat title="การจองทั้งหมด" value={totalBookings} icon={BarChart3} />
       </section>
 
-      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
         <Stat title="ครบจ่ายใน 7 วัน" value={dueSoonShops} icon={Clock3} />
         <Stat title="ค้างชำระ" value={overdueShops} icon={AlertTriangle} />
         <Stat title="หมดอายุแล้ว" value={expiredShops} icon={AlertTriangle} />
         <Stat title="ยังไม่ตั้งบิล" value={unbilledShops} icon={Clock3} />
+        <Stat title="รออนุมัติ" value={pendingSignupRequests} icon={Store} />
       </section>
 
       <Card>
@@ -184,6 +194,7 @@ export default async function PlatformPage() {
         services={services ?? []}
         activityLogs={activityRows}
         billingEvents={billingRows}
+        signupRequests={signupRows}
         actorEmail={user.email ?? user.id}
         actorUserId={user.id}
       />

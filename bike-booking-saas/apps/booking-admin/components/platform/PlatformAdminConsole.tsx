@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { AlertTriangle, Clock3, Save, Search, Shield, Store, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { BookingDetailDialog } from "@/components/bookings/BookingDetailDialog";
@@ -9,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { createBrowserClient } from "@/lib/supabase/client";
-import type { Booking, BookingStatus, PlatformActivityLog, ServiceItem, ShopBillingEvent } from "@/lib/types";
+import type { Booking, BookingStatus, PlatformActivityLog, ServiceItem, ShopBillingEvent, SignupRequest } from "@/lib/types";
 import { bookingViewKindLabel, billingEventLabel, formatBookingSchedule, formatThaiDate, formatThaiDateTime, getBangkokISODateOffset, getShopBillingHealth, platformActivityLabel, serviceNames, statusClass, statusLabel } from "@/lib/utils";
 
 export type PlatformShop = {
@@ -41,6 +42,7 @@ type Props = {
   services: ServiceItem[];
   activityLogs: PlatformActivityLog[];
   billingEvents: ShopBillingEvent[];
+  signupRequests: SignupRequest[];
   actorEmail: string;
   actorUserId: string;
 };
@@ -64,8 +66,9 @@ function buildDraftFromShop(shop: PlatformShop): ShopDraft {
   };
 }
 
-export function PlatformAdminConsole({ shops, initialBookings, services, activityLogs, billingEvents, actorEmail, actorUserId }: Props) {
+export function PlatformAdminConsole({ shops, initialBookings, services, activityLogs, billingEvents, signupRequests, actorEmail, actorUserId }: Props) {
   const supabase = useMemo(() => createBrowserClient(), []);
+  const router = useRouter();
   const [selectedShopId, setSelectedShopId] = useState<string>("all");
   const [shopQuery, setShopQuery] = useState("");
   const [bookingQuery, setBookingQuery] = useState("");
@@ -78,6 +81,7 @@ export function PlatformAdminConsole({ shops, initialBookings, services, activit
   const [deletingShopId, setDeletingShopId] = useState<string | null>(null);
   const [activityRows, setActivityRows] = useState(activityLogs);
   const [billingRows, setBillingRows] = useState(billingEvents);
+  const [signupRows, setSignupRows] = useState(signupRequests);
   const [shopDrafts, setShopDrafts] = useState<Record<string, ShopDraft>>(
     Object.fromEntries(shops.map((shop) => [shop.id, buildDraftFromShop(shop)])) as Record<string, ShopDraft>
   );
@@ -151,6 +155,117 @@ export function PlatformAdminConsole({ shops, initialBookings, services, activit
 
     setBillingRows((items) => [data, ...items].slice(0, 20));
     return true;
+  }
+
+  async function reloadAuditFeed() {
+    try {
+      const [{ data: latestActivityLogs }, { data: latestBillingEvents }] = await Promise.all([
+        supabase
+          .schema("bike_booking")
+          .from("platform_activity_logs")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .limit(20)
+          .returns<PlatformActivityLog[]>(),
+        supabase
+          .schema("bike_booking")
+          .from("shop_billing_events")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .limit(20)
+          .returns<ShopBillingEvent[]>()
+      ]);
+
+      setActivityRows(latestActivityLogs ?? []);
+      setBillingRows(latestBillingEvents ?? []);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "โหลด activity feed ไม่สำเร็จ");
+    }
+  }
+
+  async function approveSignupRequest(request: SignupRequest) {
+    setSavingShopId(request.id);
+    const { data: shopId, error } = await supabase.rpc("provision_signup_request", {
+      target_request_id: request.id
+    });
+    setSavingShopId(null);
+
+    if (error || !shopId) {
+      toast.error(error?.message || "อนุมัติคำขอสมัครไม่สำเร็จ");
+      return;
+    }
+
+    const { data: shopRow, error: shopError } = await supabase
+      .schema("bike_booking")
+      .from("shops")
+      .select("*")
+      .eq("id", shopId)
+      .maybeSingle<PlatformShop>();
+
+    if (shopError) {
+      toast.error(shopError.message);
+      return;
+    }
+
+    if (shopRow) {
+      setShopRows((items) => [shopRow, ...items.filter((item) => item.id !== shopRow.id)]);
+      setShopDrafts((items) => ({
+        ...items,
+        [shopRow.id]: buildDraftFromShop(shopRow)
+      }));
+    }
+
+    setSignupRows((items) =>
+      items.map((item) =>
+        item.id === request.id
+          ? {
+              ...item,
+              status: "approved",
+              approved_shop_id: shopId,
+              reviewed_by: actorUserId,
+              reviewed_note: item.reviewed_note ?? "approved",
+              reviewed_at: new Date().toISOString()
+            }
+          : item
+      )
+    );
+    await reloadAuditFeed();
+    router.refresh();
+    toast.success("อนุมัติคำขอสมัครร้านแล้ว");
+  }
+
+  async function rejectSignupRequest(request: SignupRequest) {
+    const note = window.prompt(`เหตุผลที่ปฏิเสธคำขอสมัครของ ${request.requested_shop_name} (เว้นว่างได้)`) ?? "";
+    const trimmedNote = note.trim();
+
+    setSavingShopId(request.id);
+    const { error } = await supabase.rpc("reject_signup_request", {
+      target_request_id: request.id,
+      note: trimmedNote || null
+    });
+    setSavingShopId(null);
+
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+
+    setSignupRows((items) =>
+      items.map((item) =>
+        item.id === request.id
+          ? {
+              ...item,
+              status: "rejected",
+              reviewed_by: actorUserId,
+              reviewed_note: trimmedNote || item.reviewed_note || "rejected",
+              reviewed_at: new Date().toISOString()
+            }
+          : item
+      )
+    );
+    await reloadAuditFeed();
+    router.refresh();
+    toast.success("ปฏิเสธคำขอสมัครร้านแล้ว");
   }
 
   async function persistShop(
@@ -241,6 +356,7 @@ export function PlatformAdminConsole({ shops, initialBookings, services, activit
 
     setShopRows((items) => items.map((item) => (item.id === shopId ? { ...item, ...nextDraft, billing_plan: nextDraft.billing_plan.trim() || null, billing_due_date: nextDraft.billing_due_date || null, expires_at: nextDraft.expires_at || null, billing_note: nextDraft.billing_note.trim() || null } : item)));
     setShopDrafts((items) => ({ ...items, [shopId]: nextDraft }));
+    router.refresh();
     toast.success("บันทึกข้อมูลร้านแล้ว");
   }
 
@@ -275,6 +391,7 @@ export function PlatformAdminConsole({ shops, initialBookings, services, activit
       delete next[shop.id];
       return next;
     });
+    router.refresh();
     if (selectedShopId === shop.id) {
       setSelectedShopId("all");
     }
@@ -306,6 +423,7 @@ export function PlatformAdminConsole({ shops, initialBookings, services, activit
   const selectedDraft = selectedShop ? shopDrafts[selectedShop.id] ?? buildDraftFromShop(selectedShop) : null;
   const selectedBillingHealth = selectedShop ? getShopBillingHealth(selectedShop, today) : null;
   const visibleBillingRows = selectedShop ? billingRows.filter((entry) => entry.shop_id === selectedShop.id) : billingRows;
+  const pendingSignupRows = signupRows.filter((request) => request.status === "pending");
 
   async function extendBilling(days: number) {
     if (!selectedShop || !selectedDraft) return;
@@ -466,6 +584,80 @@ export function PlatformAdminConsole({ shops, initialBookings, services, activit
                   </p>
                 </div>
               ))
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between gap-3">
+            <CardTitle>คำขอสมัครร้าน</CardTitle>
+            <Badge className="bg-muted text-muted-foreground">{pendingSignupRows.length} รออนุมัติ</Badge>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3">
+            {signupRows.length === 0 ? (
+              <p className="text-sm text-muted-foreground">ยังไม่มีคำขอสมัครร้าน</p>
+            ) : (
+              signupRows.slice(0, 10).map((request) => {
+                const customerUrl = request.requested_slug
+                  ? `https://${request.requested_slug}.craftbikelab.com`
+                  : "https://[shop-slug].craftbikelab.com";
+                const adminUrl = request.requested_slug
+                  ? `https://${request.requested_slug}-admin.craftbikelab.com`
+                  : "https://[shop-slug]-admin.craftbikelab.com";
+                return (
+                  <div key={request.id} className="rounded-md border bg-muted/30 p-3 text-sm">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Badge className="bg-muted text-muted-foreground capitalize">{request.status}</Badge>
+                        <span className="font-medium">{request.requested_shop_name}</span>
+                        <span className="text-muted-foreground">({request.requested_slug})</span>
+                      </div>
+                      <span className="text-xs text-muted-foreground">{formatThaiDateTime(request.created_at)}</span>
+                    </div>
+                    <div className="mt-2 grid gap-2 md:grid-cols-2">
+                      <div>
+                        <p className="text-xs uppercase text-muted-foreground">อีเมล</p>
+                        <p className="font-medium">{request.requested_email}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs uppercase text-muted-foreground">โทร</p>
+                        <p className="font-medium">{request.requested_phone ?? "-"}</p>
+                      </div>
+                      <div className="md:col-span-2">
+                        <p className="text-xs uppercase text-muted-foreground">Customer URL</p>
+                        <p className="break-all font-medium">{customerUrl}</p>
+                      </div>
+                      <div className="md:col-span-2">
+                        <p className="text-xs uppercase text-muted-foreground">Admin URL</p>
+                        <p className="break-all font-medium">{adminUrl}</p>
+                      </div>
+                    </div>
+                    {request.requested_note ? (
+                      <p className="mt-2 text-muted-foreground">หมายเหตุ: {request.requested_note}</p>
+                    ) : null}
+                    {request.reviewed_note ? (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        บันทึกตรวจ: {request.reviewed_note}
+                      </p>
+                    ) : null}
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {request.status === "pending" ? (
+                        <>
+                          <Button type="button" size="sm" onClick={() => void approveSignupRequest(request)} disabled={savingShopId === request.id}>
+                            อนุมัติ
+                          </Button>
+                          <Button type="button" size="sm" variant="outline" onClick={() => void rejectSignupRequest(request)} disabled={savingShopId === request.id}>
+                            ปฏิเสธ
+                          </Button>
+                        </>
+                      ) : null}
+                      {request.approved_shop_id ? (
+                        <Badge className="bg-green-500/15 text-green-600">ผูกกับร้านแล้ว</Badge>
+                      ) : null}
+                    </div>
+                  </div>
+                );
+              })
             )}
           </CardContent>
         </Card>

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, LogIn } from "lucide-react";
@@ -66,6 +67,17 @@ export function PortalLoginForm({ mode }: Props) {
                 {loading ? <Loader2 className="animate-spin" /> : <LogIn />}
                 {copy.button}
               </Button>
+
+              <div className="flex flex-wrap gap-2 pt-1">
+                <Button asChild variant="outline" size="sm">
+                  <Link href="/signup">สมัครร้านใหม่</Link>
+                </Button>
+                <Button asChild variant="ghost" size="sm">
+                  <Link href="/forgot-password">ลืมรหัสผ่าน</Link>
+                </Button>
+              </div>
+
+              <p className="text-xs text-muted-foreground">{copy.signupHint}</p>
             </FieldGroup>
           </form>
         </CardContent>

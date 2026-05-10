@@ -3,6 +3,7 @@ export type ServiceDurationUnit = "hour" | "day";
 export type BookingKind = "hourly" | "daily";
 export type PlatformActivityAction = "status_change" | "billing_update" | "shop_deleted";
 export type BillingEventType = "renewal" | "manual_update" | "payment_marked";
+export type SignupRequestStatus = "pending" | "approved" | "rejected";
 
 export type WorkingDay = {
   enabled: boolean;
@@ -55,6 +56,23 @@ export type ShopBillingEvent = {
   expires_at: string | null;
   note: string | null;
   created_at: string;
+};
+
+export type SignupRequest = {
+  id: string;
+  requested_email: string;
+  requested_shop_name: string;
+  requested_slug: string;
+  requested_phone: string | null;
+  requested_note: string | null;
+  auth_user_id: string | null;
+  status: SignupRequestStatus;
+  reviewed_by: string | null;
+  reviewed_note: string | null;
+  approved_shop_id: string | null;
+  created_at: string;
+  reviewed_at: string | null;
+  updated_at: string;
 };
 
 export type ServiceItem = {
