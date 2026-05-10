@@ -173,7 +173,7 @@ stable
 as $$
   select exists (
     select 1 from bike_booking.shop_users
-    where shop_id = target_shop_id and user_id = auth.uid()
+    where shop_id = target_shop_id and user_id = (select auth.uid())
   );
 $$;
 
@@ -187,8 +187,22 @@ as $$
   select exists (
     select 1
     from bike_booking.platform_users
-    where user_id = auth.uid()
+    where user_id = (select auth.uid())
   );
+$$;
+
+do $$
+begin
+  if to_regprocedure('bike_booking.is_shop_admin(uuid)') is not null then
+    revoke execute on function bike_booking.is_shop_admin(uuid) from public, anon;
+    grant execute on function bike_booking.is_shop_admin(uuid) to authenticated;
+  end if;
+
+  if to_regprocedure('bike_booking.is_platform_admin()') is not null then
+    revoke execute on function bike_booking.is_platform_admin() from public, anon;
+    grant execute on function bike_booking.is_platform_admin() to authenticated;
+  end if;
+end;
 $$;
 
 create or replace function bike_booking.assert_booking_rules()
@@ -460,13 +474,13 @@ create policy "Admins can update customers" on bike_booking.customers
 for update using (bike_booking.is_shop_admin(shop_id)) with check (bike_booking.is_shop_admin(shop_id));
 
 create policy "Users read own memberships" on bike_booking.shop_users
-for select using (user_id = auth.uid());
+for select using (user_id = (select auth.uid()));
 
 create policy "Owners manage memberships" on bike_booking.shop_users
 for all using (bike_booking.is_shop_admin(shop_id)) with check (bike_booking.is_shop_admin(shop_id));
 
 create policy "Users read own platform membership" on bike_booking.platform_users
-for select using (user_id = auth.uid());
+for select using (user_id = (select auth.uid()));
 
 create policy "Platform admins manage platform users" on bike_booking.platform_users
 for all using (bike_booking.is_platform_admin()) with check (bike_booking.is_platform_admin());
@@ -523,6 +537,8 @@ create table bike_booking.signup_requests (
 create index idx_signup_requests_status_created_at on bike_booking.signup_requests(status, created_at desc);
 create index idx_signup_requests_slug on bike_booking.signup_requests(requested_slug);
 create index idx_signup_requests_auth_user on bike_booking.signup_requests(auth_user_id);
+create index idx_signup_requests_approved_shop_id on bike_booking.signup_requests(approved_shop_id);
+create index idx_signup_requests_reviewed_by on bike_booking.signup_requests(reviewed_by);
 
 create or replace function bike_booking.sync_signup_requests_updated_at()
 returns trigger
@@ -545,6 +561,7 @@ create or replace function bike_booking.default_signup_working_hours()
 returns jsonb
 language sql
 immutable
+set search_path = pg_catalog
 as $$
   select '{
     "mon":{"enabled":true,"start":"09:00","end":"18:00","slot_capacity":1,"daily_limit":0},
@@ -732,7 +749,7 @@ $$;
 alter table bike_booking.signup_requests enable row level security;
 
 create policy "Users read own signup requests" on bike_booking.signup_requests
-for select using (auth_user_id = auth.uid());
+for select using (auth_user_id = (select auth.uid()));
 
 create policy "Platform admins manage signup requests" on bike_booking.signup_requests
 for all using (bike_booking.is_platform_admin()) with check (bike_booking.is_platform_admin());
@@ -740,6 +757,28 @@ for all using (bike_booking.is_platform_admin()) with check (bike_booking.is_pla
 grant select, insert, update, delete on bike_booking.signup_requests to authenticated;
 grant execute on function bike_booking.provision_signup_request(uuid) to authenticated;
 grant execute on function bike_booking.reject_signup_request(uuid, text) to authenticated;
+
+do $$
+begin
+  if to_regprocedure('bike_booking.default_signup_working_hours()') is not null then
+    revoke execute on function bike_booking.default_signup_working_hours() from public, anon, authenticated;
+  end if;
+
+  if to_regprocedure('bike_booking.sync_signup_requests_updated_at()') is not null then
+    revoke execute on function bike_booking.sync_signup_requests_updated_at() from public, anon, authenticated;
+  end if;
+
+  if to_regprocedure('bike_booking.provision_signup_request(uuid)') is not null then
+    revoke execute on function bike_booking.provision_signup_request(uuid) from public, anon;
+    grant execute on function bike_booking.provision_signup_request(uuid) to authenticated;
+  end if;
+
+  if to_regprocedure('bike_booking.reject_signup_request(uuid, text)') is not null then
+    revoke execute on function bike_booking.reject_signup_request(uuid, text) from public, anon;
+    grant execute on function bike_booking.reject_signup_request(uuid, text) to authenticated;
+  end if;
+end;
+$$;
 
 
 
