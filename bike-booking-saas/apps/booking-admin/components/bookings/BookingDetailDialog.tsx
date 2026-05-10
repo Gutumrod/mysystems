@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { createBrowserClient } from "@/lib/supabase/client";
 import type { Booking, BookingStatus, ServiceItem } from "@/lib/types";
-import { formatBangkokISODate, formatBookingSchedule, serviceNames, statusClass, statusLabel } from "@/lib/utils";
+import { formatBangkokISODate, formatBookingSchedule, isBookingEditableOnDate, serviceNames, statusClass, statusLabel } from "@/lib/utils";
 
 type BookingDraft = {
   booking_date: string;
@@ -53,7 +53,8 @@ export function BookingDetailDialog({ booking, services, open, onOpenChange, onU
     return bookingServices[0]?.duration_unit === "day" ? "daily" : "hourly";
   }, [bookingModeCount, bookingServices]);
   const hasModeMismatch = Boolean(booking && inferredMode && booking.booking_kind !== inferredMode);
-  const canEdit = Boolean(booking && !hasModeMismatch && booking.status !== "cancelled" && booking.status !== "completed" && booking.status !== "no_show" && booking.booking_date >= today);
+  const canEdit = Boolean(booking && !hasModeMismatch && isBookingEditableOnDate(booking, today));
+  const bookingDateLocked = Boolean(booking && booking.booking_kind === "daily" && booking.booking_date < today);
 
   const requiredDailyDays = useMemo(() => {
     if (!booking || booking.booking_kind !== "daily") return 0;
@@ -235,9 +236,11 @@ export function BookingDetailDialog({ booking, services, open, onOpenChange, onU
           <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-amber-900">
             <p className="flex items-start gap-2 font-medium">
               <AlertTriangle className="mt-0.5 size-4 shrink-0" />
-              แก้ไขได้เฉพาะคิววันนี้หรืออนาคตเท่านั้น
+              แก้ไขได้เฉพาะคิวที่ยัง active อยู่และยังไม่ปิดสถานะแล้ว
             </p>
-            <p className="mt-1 text-xs">ถ้าคิวนี้เป็นข้อมูลเก่าและ mode ไม่ตรงกัน แนะนำลบแล้วจองใหม่จะนิ่งกว่า</p>
+            <p className="mt-1 text-xs">
+              ถ้าคิวรายวันเริ่มไปแล้ว จะล็อกวันเริ่มไว้ และให้แก้วันสิ้นสุดกับหมายเหตุแทน
+            </p>
           </div>
 
           <FieldGroup>
@@ -247,9 +250,11 @@ export function BookingDetailDialog({ booking, services, open, onOpenChange, onU
                 id="edit_booking_date"
                 type="date"
                 min={today}
+                disabled={bookingDateLocked}
                 value={draft?.booking_date ?? ""}
                 onChange={(event) => setDraft((current) => (current ? { ...current, booking_date: event.target.value } : current))}
               />
+              {bookingDateLocked ? <p className="text-xs text-muted-foreground">คิวนี้เริ่มไปแล้ว จึงแก้วันเริ่มไม่ได้</p> : null}
             </Field>
 
             {booking.booking_kind === "hourly" ? (

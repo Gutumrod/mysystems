@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BookingDetailDialog } from "@/components/bookings/BookingDetailDialog";
 import { createBrowserClient } from "@/lib/supabase/client";
 import type { Booking, BookingStatus, ServiceItem } from "@/lib/types";
-import { formatBookingSchedule, isBookingActiveOnDate, serviceNames, statusClass, statusLabel } from "@/lib/utils";
+import { formatBookingSchedule, isBookingActiveOnDate, isBookingTerminalStatus, serviceNames, statusClass, statusLabel } from "@/lib/utils";
 
 type Props = {
   initialBookings: Booking[];
@@ -32,14 +32,14 @@ export function TodayBoard({ initialBookings, services, shopId, today, demoMode 
       .from("bookings")
       .select("*")
       .eq("shop_id", shopId)
-      .eq("booking_date", today)
+      .order("booking_date")
       .order("booking_time_start")
       .returns<Booking[]>();
 
     if (!error) {
       setBookings(data ?? []);
     }
-  }, [shopId, supabase, today]);
+  }, [shopId, supabase]);
 
   useEffect(() => {
     if (!supabase) return;
@@ -79,6 +79,7 @@ export function TodayBoard({ initialBookings, services, shopId, today, demoMode 
   }
 
   const activeToday = bookings.filter((booking) => isBookingActiveOnDate(booking, today));
+  const visibleToday = activeToday.filter((booking) => !isBookingTerminalStatus(booking.status));
   const confirmedCount = activeToday.filter((booking) => booking.status === "confirmed").length;
   const inProgressCount = activeToday.filter((booking) => booking.status === "in_progress").length;
   const completedCount = activeToday.filter((booking) => booking.status === "completed").length;
@@ -91,7 +92,7 @@ export function TodayBoard({ initialBookings, services, shopId, today, demoMode 
       </div>
 
       <div className="grid gap-3 sm:grid-cols-4">
-        <TodayStat title="คิวทั้งหมด" value={bookings.length} />
+        <TodayStat title="คิวทั้งหมด" value={activeToday.length} />
         <TodayStat title="รอเริ่ม" value={confirmedCount} />
         <TodayStat title="กำลังทำ" value={inProgressCount} />
         <TodayStat title="เสร็จแล้ว" value={completedCount} />
@@ -104,9 +105,11 @@ export function TodayBoard({ initialBookings, services, shopId, today, demoMode 
         <CardContent className="flex flex-col gap-3">
           {activeToday.length === 0 ? (
             <div className="rounded-lg border bg-muted/30 p-6 text-center text-sm text-muted-foreground">ยังไม่มีคิววันนี้</div>
+          ) : visibleToday.length === 0 ? (
+            <div className="rounded-lg border bg-muted/30 p-6 text-center text-sm text-muted-foreground">คิววันนี้ถูกปิดสถานะหมดแล้ว</div>
           ) : null}
 
-          {activeToday
+          {visibleToday
             .sort((a, b) => {
               const left = a.booking_kind === "daily" ? `${a.booking_date} ${a.booking_end_date ?? a.booking_date}` : `${a.booking_date} ${a.booking_time_start ?? "00:00"}`;
               const right = b.booking_kind === "daily" ? `${b.booking_date} ${b.booking_end_date ?? b.booking_date}` : `${b.booking_date} ${b.booking_time_start ?? "00:00"}`;

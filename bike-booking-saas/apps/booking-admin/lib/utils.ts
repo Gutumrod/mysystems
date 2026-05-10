@@ -149,6 +149,18 @@ export function isBookingActiveOnDate(booking: Booking, date: string) {
   return booking.booking_date === date;
 }
 
+export function isBookingTerminalStatus(status: BookingStatus) {
+  return status === "completed" || status === "cancelled" || status === "no_show";
+}
+
+export function isBookingEditableOnDate(booking: Booking, date: string) {
+  if (isBookingTerminalStatus(booking.status)) {
+    return false;
+  }
+
+  return booking.booking_date >= date || isBookingActiveOnDate(booking, date);
+}
+
 export function bookingViewKindLabel(kind: BookingKind) {
   return kind === "daily" ? "รายวัน" : "รายชั่วโมง";
 }
