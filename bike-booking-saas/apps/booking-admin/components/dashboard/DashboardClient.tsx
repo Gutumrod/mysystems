@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { BookingDetailDialog } from "@/components/bookings/BookingDetailDialog";
 import { createBrowserClient } from "@/lib/supabase/client";
 import type { Booking, BookingStatus, ServiceItem } from "@/lib/types";
-import { bookingStats, formatBangkokISODate, formatBookingSchedule, isBookingActiveOnDate, serviceNames, statusClass, statusLabel } from "@/lib/utils";
+import { bookingStats, formatBangkokISODate, formatBookingSchedule, isBookingActiveOnDate, isBookingTerminalStatus, serviceNames, statusClass, statusLabel } from "@/lib/utils";
 
 type Props = {
   initialBookings: Booking[];
@@ -26,6 +26,7 @@ export function DashboardClient({ initialBookings, services, shopId, demoMode = 
   const today = formatBangkokISODate();
   const todayBookings = bookings
     .filter((booking) => isBookingActiveOnDate(booking, today))
+    .filter((booking) => !isBookingTerminalStatus(booking.status))
     .sort((a, b) => {
       const left = a.booking_kind === "daily" ? `${a.booking_date} ${a.booking_end_date ?? a.booking_date}` : `${a.booking_date} ${a.booking_time_start ?? "00:00"}`;
       const right = b.booking_kind === "daily" ? `${b.booking_date} ${b.booking_end_date ?? b.booking_date}` : `${b.booking_date} ${b.booking_time_start ?? "00:00"}`;

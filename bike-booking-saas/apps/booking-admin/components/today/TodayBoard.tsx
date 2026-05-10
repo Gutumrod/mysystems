@@ -92,7 +92,7 @@ export function TodayBoard({ initialBookings, services, shopId, today, demoMode 
       </div>
 
       <div className="grid gap-3 sm:grid-cols-4">
-        <TodayStat title="คิวทั้งหมด" value={activeToday.length} />
+        <TodayStat title="คิวทั้งหมด" value={visibleToday.length} />
         <TodayStat title="รอเริ่ม" value={confirmedCount} />
         <TodayStat title="กำลังทำ" value={inProgressCount} />
         <TodayStat title="เสร็จแล้ว" value={completedCount} />
