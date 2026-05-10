@@ -21,6 +21,7 @@
 - **Drive folder**: พื้นที่ทำงานหลัก และที่เก็บเอกสารกลาง
 - **Git repo / GitHub**: ประวัติโค้ดจริงและเวอร์ชันที่ต้องอัปเดตหลังจบงาน
 - **Session notes**: บันทึกสถานะล่าสุดของงาน
+- **Today plan**: ถ้ามีแผนงานรายวัน ให้ดู `docs/TODAY_PLAN_20260510.md` ก่อนเริ่มรอบ
 - **Backups**: สำเนาก่อนแก้ของเสี่ยง เช่น schema, deployment config, logic สำคัญ
 - **Domain standard**: ดู [docs/DOMAIN_STANDARD.md](DOMAIN_STANDARD.md) ถ้าเกี่ยวกับชื่อ URL หรือ flow สมัครร้าน
 
@@ -41,9 +42,10 @@
 1. เปิด `START_HERE.md`
 2. เปิดโฟลเดอร์ Drive ของโปรเจค
 3. อ่าน `SESSION_NOTES_CURRENT.md` ก่อนเสมอ
-4. อ่าน `docs/WORKSPACE_RULES.md`
-5. อ่าน `README.md`, `docs/ONBOARDING_*.md`, หรือ `docs/LAUNCH_CHECKLIST_*.md` ที่เกี่ยวข้อง
-6. เช็กว่าไฟล์ที่กำลังจะทำไม่ชนกับรอบก่อน
+4. อ่าน `docs/TODAY_PLAN_20260510.md` ถ้ามีแผนงานของวันนี้
+5. อ่าน `docs/WORKSPACE_RULES.md`
+6. อ่าน `README.md`, `docs/ONBOARDING_*.md`, หรือ `docs/LAUNCH_CHECKLIST_*.md` ที่เกี่ยวข้อง
+7. เช็กว่าไฟล์ที่กำลังจะทำไม่ชนกับรอบก่อน
 
 ### 2) ระหว่างทำงาน
 
