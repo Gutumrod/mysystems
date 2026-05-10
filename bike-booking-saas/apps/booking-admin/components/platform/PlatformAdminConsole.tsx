@@ -9,8 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { createBrowserClient } from "@/lib/supabase/client";
-import type { Booking, BookingStatus, PlatformActivityLog, ServiceItem } from "@/lib/types";
-import { bookingViewKindLabel, formatBookingSchedule, formatThaiDate, formatThaiDateTime, getBangkokISODateOffset, getShopBillingHealth, platformActivityLabel, serviceNames, statusClass, statusLabel } from "@/lib/utils";
+import type { Booking, BookingStatus, PlatformActivityLog, ServiceItem, ShopBillingEvent } from "@/lib/types";
+import { bookingViewKindLabel, billingEventLabel, formatBookingSchedule, formatThaiDate, formatThaiDateTime, getBangkokISODateOffset, getShopBillingHealth, platformActivityLabel, serviceNames, statusClass, statusLabel } from "@/lib/utils";
 
 export type PlatformShop = {
   id: string;
@@ -40,6 +40,7 @@ type Props = {
   initialBookings: Booking[];
   services: ServiceItem[];
   activityLogs: PlatformActivityLog[];
+  billingEvents: ShopBillingEvent[];
   actorEmail: string;
   actorUserId: string;
 };
@@ -63,7 +64,7 @@ function buildDraftFromShop(shop: PlatformShop): ShopDraft {
   };
 }
 
-export function PlatformAdminConsole({ shops, initialBookings, services, activityLogs, actorEmail, actorUserId }: Props) {
+export function PlatformAdminConsole({ shops, initialBookings, services, activityLogs, billingEvents, actorEmail, actorUserId }: Props) {
   const supabase = useMemo(() => createBrowserClient(), []);
   const [selectedShopId, setSelectedShopId] = useState<string>("all");
   const [shopQuery, setShopQuery] = useState("");
@@ -76,6 +77,7 @@ export function PlatformAdminConsole({ shops, initialBookings, services, activit
   const [savingShopId, setSavingShopId] = useState<string | null>(null);
   const [deletingShopId, setDeletingShopId] = useState<string | null>(null);
   const [activityRows, setActivityRows] = useState(activityLogs);
+  const [billingRows, setBillingRows] = useState(billingEvents);
   const [shopDrafts, setShopDrafts] = useState<Record<string, ShopDraft>>(
     Object.fromEntries(shops.map((shop) => [shop.id, buildDraftFromShop(shop)])) as Record<string, ShopDraft>
   );
@@ -126,7 +128,36 @@ export function PlatformAdminConsole({ shops, initialBookings, services, activit
     return true;
   }
 
-  async function persistShop(shopId: string, patch: Partial<ShopDraft> = {}) {
+  async function recordBillingEvent(entry: Omit<ShopBillingEvent, "id" | "created_at" | "actor_user_id" | "actor_email">) {
+    const { data, error } = await supabase
+      .schema("bike_booking")
+      .from("shop_billing_events")
+      .insert({
+        actor_user_id: actorUserId,
+        actor_email: actorEmail,
+        shop_id: entry.shop_id,
+        event_type: entry.event_type,
+        billing_plan: entry.billing_plan,
+        billing_due_date: entry.billing_due_date,
+        expires_at: entry.expires_at,
+        note: entry.note
+      })
+      .select("*")
+      .single<ShopBillingEvent>();
+
+    if (error || !data) {
+      return false;
+    }
+
+    setBillingRows((items) => [data, ...items].slice(0, 20));
+    return true;
+  }
+
+  async function persistShop(
+    shopId: string,
+    patch: Partial<ShopDraft> = {},
+    billingEventType: ShopBillingEvent["event_type"] = "manual_update"
+  ) {
     const shop = shopById.get(shopId);
     if (!shop) {
       toast.error("ไม่พบร้านที่เลือก");
@@ -184,6 +215,30 @@ export function PlatformAdminConsole({ shops, initialBookings, services, activit
       });
     }
 
+    const billingNoteParts = [
+      nextDraft.billing_plan.trim() ? `แผน ${nextDraft.billing_plan.trim()}` : null,
+      nextDraft.billing_due_date ? `ครบจ่าย ${nextDraft.billing_due_date}` : null,
+      nextDraft.expires_at ? `หมดอายุ ${nextDraft.expires_at}` : null,
+      nextDraft.billing_note.trim() || null
+    ].filter((part): part is string => Boolean(part));
+
+    if (
+      shop.subscription_status !== nextDraft.subscription_status ||
+      (shop.billing_plan ?? "") !== nextDraft.billing_plan.trim() ||
+      (shop.billing_due_date ?? "") !== (nextDraft.billing_due_date || "") ||
+      (shop.expires_at ?? "") !== (nextDraft.expires_at || "") ||
+      (shop.billing_note ?? "") !== nextDraft.billing_note.trim()
+    ) {
+      void recordBillingEvent({
+        shop_id: shop.id,
+        event_type: billingEventType,
+        billing_plan: nextDraft.billing_plan.trim() || null,
+        billing_due_date: nextDraft.billing_due_date || null,
+        expires_at: nextDraft.expires_at || null,
+        note: billingNoteParts.join(" · ") || null
+      });
+    }
+
     setShopRows((items) => items.map((item) => (item.id === shopId ? { ...item, ...nextDraft, billing_plan: nextDraft.billing_plan.trim() || null, billing_due_date: nextDraft.billing_due_date || null, expires_at: nextDraft.expires_at || null, billing_note: nextDraft.billing_note.trim() || null } : item)));
     setShopDrafts((items) => ({ ...items, [shopId]: nextDraft }));
     toast.success("บันทึกข้อมูลร้านแล้ว");
@@ -214,6 +269,7 @@ export function PlatformAdminConsole({ shops, initialBookings, services, activit
 
     setShopRows((items) => items.filter((item) => item.id !== shop.id));
     setBookings((items) => items.filter((item) => item.shop_id !== shop.id));
+    setBillingRows((items) => items.filter((item) => item.shop_id !== shop.id));
     setShopDrafts((items) => {
       const next = { ...items };
       delete next[shop.id];
@@ -249,6 +305,7 @@ export function PlatformAdminConsole({ shops, initialBookings, services, activit
 
   const selectedDraft = selectedShop ? shopDrafts[selectedShop.id] ?? buildDraftFromShop(selectedShop) : null;
   const selectedBillingHealth = selectedShop ? getShopBillingHealth(selectedShop, today) : null;
+  const visibleBillingRows = selectedShop ? billingRows.filter((entry) => entry.shop_id === selectedShop.id) : billingRows;
 
   async function extendBilling(days: number) {
     if (!selectedShop || !selectedDraft) return;
@@ -259,7 +316,7 @@ export function PlatformAdminConsole({ shops, initialBookings, services, activit
       billing_due_date: dueDate,
       expires_at: dueDate,
       billing_note: nextBillingNote
-    });
+    }, "renewal");
   }
 
   return (
@@ -365,6 +422,38 @@ export function PlatformAdminConsole({ shops, initialBookings, services, activit
                   <p className="mt-1 text-xs text-muted-foreground">
                     โดย {entry.actor_email}
                     {entry.before_status || entry.after_status ? ` · ${entry.before_status ?? "-"} → ${entry.after_status ?? "-"}` : ""}
+                  </p>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>ประวัติบิลล่าสุด</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3">
+            {visibleBillingRows.length === 0 ? (
+              <p className="text-sm text-muted-foreground">ยังไม่มีประวัติบิล</p>
+            ) : (
+              visibleBillingRows.slice(0, 10).map((entry) => (
+                <div key={entry.id} className="rounded-md border bg-muted/30 p-3 text-sm">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge className="bg-muted text-muted-foreground">{billingEventLabel(entry.event_type)}</Badge>
+                      <span className="font-medium">{shopById.get(entry.shop_id)?.name ?? entry.shop_id}</span>
+                    </div>
+                    <span className="text-xs text-muted-foreground">{formatThaiDateTime(entry.created_at)}</span>
+                  </div>
+                  <p className="mt-2 text-muted-foreground">
+                    {entry.billing_plan ? `แผน ${entry.billing_plan}` : "ไม่มีแผน"}{" "}
+                    {entry.billing_due_date ? `· ครบจ่าย ${formatThaiDate(entry.billing_due_date)}` : ""}{" "}
+                    {entry.expires_at ? `· หมดอายุ ${formatThaiDate(entry.expires_at)}` : ""}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    โดย {entry.actor_email}
+                    {entry.note ? ` · ${entry.note}` : ""}
                   </p>
                 </div>
               ))

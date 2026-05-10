@@ -51,6 +51,14 @@ export function platformActivityLabel(action: "status_change" | "billing_update"
   }[action];
 }
 
+export function billingEventLabel(type: "renewal" | "manual_update" | "payment_marked") {
+  return {
+    renewal: "ต่ออายุ",
+    manual_update: "ปรับบิล",
+    payment_marked: "บันทึกจ่ายแล้ว"
+  }[type];
+}
+
 export function getShopBillingHealth(shop: Pick<Shop, "billing_due_date" | "expires_at" | "billing_plan" | "subscription_status">, now = formatBangkokISODate()) {
   if (!shop.billing_plan && !shop.billing_due_date && !shop.expires_at) {
     return {

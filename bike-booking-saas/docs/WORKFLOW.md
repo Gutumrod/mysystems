@@ -24,6 +24,7 @@
 - **Today plan**: ถ้ามีแผนงานรายวัน ให้ดู `docs/TODAY_PLAN_20260510.md` ก่อนเริ่มรอบ
 - **Backups**: สำเนาก่อนแก้ของเสี่ยง เช่น schema, deployment config, logic สำคัญ
 - **Domain standard**: ดู [docs/DOMAIN_STANDARD.md](DOMAIN_STANDARD.md) ถ้าเกี่ยวกับชื่อ URL หรือ flow สมัครร้าน
+- **Self-service blueprint**: ดู [docs/SELF_SERVICE_SIGNUP_BLUEPRINT.md](SELF_SERVICE_SIGNUP_BLUEPRINT.md) ถ้าจะต่อ phase สมัครร้านเองและชำระเงิน
 
 ## โครงโฟลเดอร์ที่ใช้
 

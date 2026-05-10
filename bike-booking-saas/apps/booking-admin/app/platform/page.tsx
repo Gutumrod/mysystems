@@ -4,7 +4,7 @@ import { PlatformAdminConsole, type PlatformShop } from "@/components/platform/P
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { hasSupabaseEnv } from "@/lib/mock-data";
-import type { Booking, PlatformActivityLog, ServiceItem } from "@/lib/types";
+import type { Booking, PlatformActivityLog, ServiceItem, ShopBillingEvent } from "@/lib/types";
 import { formatBangkokISODate, formatThaiDate, getBangkokISODateOffset, getShopBillingHealth } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -58,7 +58,7 @@ export default async function PlatformPage() {
     const bHealth = getShopBillingHealth(b, today);
     return aHealth.sortRank - bHealth.sortRank || a.name.localeCompare(b.name, "th");
   });
-  const [{ data: bookings }, { data: services }, { data: activityLogs }] = await Promise.all([
+  const [{ data: bookings }, { data: services }, { data: activityLogs }, { data: billingEvents }] = await Promise.all([
     supabase
       .schema("bike_booking")
       .from("bookings")
@@ -79,10 +79,18 @@ export default async function PlatformPage() {
       .select("*")
       .order("created_at", { ascending: false })
       .limit(20)
-      .returns<PlatformActivityLog[]>()
+      .returns<PlatformActivityLog[]>(),
+    supabase
+      .schema("bike_booking")
+      .from("shop_billing_events")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(20)
+      .returns<ShopBillingEvent[]>()
   ]);
   const bookingRows = bookings ?? [];
   const activityRows = activityLogs ?? [];
+  const billingRows = billingEvents ?? [];
   const totalShops = shopRows.length;
   const activeShops = shopRows.filter((shop) => shop.subscription_status === "active").length;
   const suspendedShops = shopRows.filter((shop) => shop.subscription_status === "suspended").length;
@@ -175,6 +183,7 @@ export default async function PlatformPage() {
         initialBookings={bookingRows}
         services={services ?? []}
         activityLogs={activityRows}
+        billingEvents={billingRows}
         actorEmail={user.email ?? user.id}
         actorUserId={user.id}
       />

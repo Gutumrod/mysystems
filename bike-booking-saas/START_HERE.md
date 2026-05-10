@@ -11,7 +11,8 @@
 5. `SESSION_NOTES_CURRENT.md`
 6. `docs/TODAY_PLAN_20260510.md`
 7. `docs/DOMAIN_STANDARD.md`
-8. `README.md`
+8. `docs/SELF_SERVICE_SIGNUP_BLUEPRINT.md`
+9. `README.md`
 
 ## หลังอ่านครบแล้ว ต้องทำอะไร
 

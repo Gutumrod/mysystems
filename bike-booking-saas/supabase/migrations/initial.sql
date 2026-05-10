@@ -98,6 +98,8 @@ create table bike_booking.platform_users (
 
 create type bike_booking.platform_activity_action as enum ('status_change', 'billing_update', 'shop_deleted');
 
+create type bike_booking.billing_event_type as enum ('renewal', 'manual_update', 'payment_marked');
+
 create table bike_booking.platform_activity_logs (
   id uuid primary key default gen_random_uuid(),
   actor_user_id uuid references auth.users(id) on delete set null,
@@ -112,12 +114,42 @@ create table bike_booking.platform_activity_logs (
   created_at timestamptz not null default now()
 );
 
+create table bike_booking.shop_billing_events (
+  id uuid primary key default gen_random_uuid(),
+  shop_id uuid not null references bike_booking.shops(id) on delete cascade,
+  actor_user_id uuid references auth.users(id) on delete set null,
+  actor_email text not null,
+  event_type bike_booking.billing_event_type not null,
+  billing_plan text,
+  billing_due_date date,
+  expires_at date,
+  note text,
+  created_at timestamptz not null default now()
+);
+
+create type bike_booking.billing_event_type as enum ('renewal', 'manual_update', 'payment_marked');
+
+create table bike_booking.shop_billing_events (
+  id uuid primary key default gen_random_uuid(),
+  shop_id uuid not null references bike_booking.shops(id) on delete cascade,
+  actor_user_id uuid references auth.users(id) on delete set null,
+  actor_email text not null,
+  event_type bike_booking.billing_event_type not null,
+  billing_plan text,
+  billing_due_date date,
+  expires_at date,
+  note text,
+  created_at timestamptz not null default now()
+);
+
 create index idx_shops_slug on bike_booking.shops(slug);
 create index idx_bookings_shop_date on bike_booking.bookings(shop_id, booking_date);
 create index idx_service_items_shop on bike_booking.service_items(shop_id, is_active);
 create index idx_customers_phone on bike_booking.customers(shop_id, phone);
 create index idx_platform_activity_logs_created_at on bike_booking.platform_activity_logs(created_at desc);
 create index idx_platform_activity_logs_shop on bike_booking.platform_activity_logs(target_shop_id, created_at desc);
+create index idx_shop_billing_events_shop_created_at on bike_booking.shop_billing_events(shop_id, created_at desc);
+create index idx_shop_billing_events_shop_created_at on bike_booking.shop_billing_events(shop_id, created_at desc);
 
 create view bike_booking.public_booking_slots as
 select
@@ -359,6 +391,7 @@ alter table bike_booking.customers enable row level security;
 alter table bike_booking.shop_users enable row level security;
 alter table bike_booking.platform_users enable row level security;
 alter table bike_booking.platform_activity_logs enable row level security;
+alter table bike_booking.shop_billing_events enable row level security;
 
 create policy "Public can read active shops" on bike_booking.shops
 for select using (subscription_status in ('trial', 'active'));
@@ -444,6 +477,12 @@ for select using (bike_booking.is_platform_admin());
 create policy "Platform admins write activity logs" on bike_booking.platform_activity_logs
 for insert with check (bike_booking.is_platform_admin());
 
+create policy "Platform admins read billing events" on bike_booking.shop_billing_events
+for select using (bike_booking.is_platform_admin());
+
+create policy "Platform admins write billing events" on bike_booking.shop_billing_events
+for insert with check (bike_booking.is_platform_admin());
+
 grant usage on schema bike_booking to anon, authenticated;
 grant select on bike_booking.shops, bike_booking.service_items, bike_booking.shop_holidays, bike_booking.public_booking_slots to anon, authenticated;
 grant insert, select on bike_booking.bookings to anon, authenticated;
@@ -454,6 +493,7 @@ grant select, update on bike_booking.customers to authenticated;
 grant select on bike_booking.shop_users to authenticated;
 grant select on bike_booking.platform_users to authenticated;
 grant select, insert on bike_booking.platform_activity_logs to authenticated;
+grant select, insert on bike_booking.shop_billing_events to authenticated;
 grant execute on function bike_booking.mark_booking_no_show(uuid) to authenticated;
 
 
