@@ -34,6 +34,23 @@ export function formatThaiDate(date: string | Date) {
   return format(parsed, "d MMM yyyy", { locale: th });
 }
 
+export function formatThaiDateTime(date: string | Date) {
+  const parsed = typeof date === "string" ? new Date(date) : date;
+  return new Intl.DateTimeFormat("th-TH", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "Asia/Bangkok"
+  }).format(parsed);
+}
+
+export function platformActivityLabel(action: "status_change" | "billing_update" | "shop_deleted") {
+  return {
+    status_change: "เปลี่ยนสถานะ",
+    billing_update: "อัปเดตบิล",
+    shop_deleted: "ลบร้าน"
+  }[action];
+}
+
 export function statusLabel(status: BookingStatus) {
   return {
     confirmed: "ยืนยันแล้ว",

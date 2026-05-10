@@ -4,7 +4,7 @@ import { PlatformAdminConsole, type PlatformShop } from "@/components/platform/P
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { hasSupabaseEnv } from "@/lib/mock-data";
-import type { Booking, ServiceItem } from "@/lib/types";
+import type { Booking, PlatformActivityLog, ServiceItem } from "@/lib/types";
 import { formatBangkokISODate, formatThaiDate, getBangkokISODateOffset } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -53,7 +53,7 @@ export default async function PlatformPage() {
   const shopRows = shops ?? [];
   const today = formatBangkokISODate();
   const dueSoonThreshold = getBangkokISODateOffset(7);
-  const [{ data: bookings }, { data: services }] = await Promise.all([
+  const [{ data: bookings }, { data: services }, { data: activityLogs }] = await Promise.all([
     supabase
       .schema("bike_booking")
       .from("bookings")
@@ -67,9 +67,17 @@ export default async function PlatformPage() {
       .from("service_items")
       .select("*")
       .order("sort_order")
-      .returns<ServiceItem[]>()
+      .returns<ServiceItem[]>(),
+    supabase
+      .schema("bike_booking")
+      .from("platform_activity_logs")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(20)
+      .returns<PlatformActivityLog[]>()
   ]);
   const bookingRows = bookings ?? [];
+  const activityRows = activityLogs ?? [];
   const totalShops = shopRows.length;
   const activeShops = shopRows.filter((shop) => shop.subscription_status === "active").length;
   const suspendedShops = shopRows.filter((shop) => shop.subscription_status === "suspended").length;
@@ -147,7 +155,14 @@ export default async function PlatformPage() {
         </CardContent>
       </Card>
 
-      <PlatformAdminConsole shops={shopRows} initialBookings={bookingRows} services={services ?? []} />
+      <PlatformAdminConsole
+        shops={shopRows}
+        initialBookings={bookingRows}
+        services={services ?? []}
+        activityLogs={activityRows}
+        actorEmail={user.email ?? user.id}
+        actorUserId={user.id}
+      />
     </main>
   );
 }

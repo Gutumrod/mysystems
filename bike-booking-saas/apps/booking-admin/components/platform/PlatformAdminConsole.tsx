@@ -9,8 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { createBrowserClient } from "@/lib/supabase/client";
-import type { Booking, BookingStatus, ServiceItem } from "@/lib/types";
-import { bookingViewKindLabel, formatBookingSchedule, formatThaiDate, serviceNames, statusClass, statusLabel } from "@/lib/utils";
+import type { Booking, BookingStatus, PlatformActivityLog, ServiceItem } from "@/lib/types";
+import { bookingViewKindLabel, formatBookingSchedule, formatThaiDate, formatThaiDateTime, platformActivityLabel, serviceNames, statusClass, statusLabel } from "@/lib/utils";
 
 export type PlatformShop = {
   id: string;
@@ -39,6 +39,9 @@ type Props = {
   shops: PlatformShop[];
   initialBookings: Booking[];
   services: ServiceItem[];
+  activityLogs: PlatformActivityLog[];
+  actorEmail: string;
+  actorUserId: string;
 };
 
 const statusOptions: Array<{ value: BookingStatus | "all"; label: string }> = [
@@ -60,7 +63,7 @@ function buildDraftFromShop(shop: PlatformShop): ShopDraft {
   };
 }
 
-export function PlatformAdminConsole({ shops, initialBookings, services }: Props) {
+export function PlatformAdminConsole({ shops, initialBookings, services, activityLogs, actorEmail, actorUserId }: Props) {
   const supabase = useMemo(() => createBrowserClient(), []);
   const [selectedShopId, setSelectedShopId] = useState<string>("all");
   const [shopQuery, setShopQuery] = useState("");
@@ -72,6 +75,7 @@ export function PlatformAdminConsole({ shops, initialBookings, services }: Props
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [savingShopId, setSavingShopId] = useState<string | null>(null);
   const [deletingShopId, setDeletingShopId] = useState<string | null>(null);
+  const [activityRows, setActivityRows] = useState(activityLogs);
   const [shopDrafts, setShopDrafts] = useState<Record<string, ShopDraft>>(
     Object.fromEntries(shops.map((shop) => [shop.id, buildDraftFromShop(shop)])) as Record<string, ShopDraft>
   );
@@ -95,6 +99,32 @@ export function PlatformAdminConsole({ shops, initialBookings, services }: Props
   const dueSoonThreshold = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString("en-CA", { timeZone: "Asia/Bangkok" });
   const dueSoonShops = shopRows.filter((shop) => Boolean(shop.billing_due_date && shop.billing_due_date >= today && shop.billing_due_date <= dueSoonThreshold)).length;
   const expiredShops = shopRows.filter((shop) => Boolean(shop.expires_at && shop.expires_at < today)).length;
+
+  async function recordActivity(entry: Omit<PlatformActivityLog, "id" | "created_at" | "actor_user_id" | "actor_email">) {
+    const { data, error } = await supabase
+      .schema("bike_booking")
+      .from("platform_activity_logs")
+      .insert({
+        actor_user_id: actorUserId,
+        actor_email: actorEmail,
+        action: entry.action,
+        target_shop_id: entry.target_shop_id,
+        target_shop_slug: entry.target_shop_slug,
+        target_shop_name: entry.target_shop_name,
+        before_status: entry.before_status,
+        after_status: entry.after_status,
+        note: entry.note
+      })
+      .select("*")
+      .single<PlatformActivityLog>();
+
+    if (error || !data) {
+      return false;
+    }
+
+    setActivityRows((items) => [data, ...items].slice(0, 20));
+    return true;
+  }
 
   async function persistShop(shopId: string, patch: Partial<ShopDraft> = {}) {
     const shop = shopById.get(shopId);
@@ -125,6 +155,35 @@ export function PlatformAdminConsole({ shops, initialBookings, services }: Props
       return;
     }
 
+    const activityNoteParts: string[] = [];
+    if (shop.subscription_status !== nextDraft.subscription_status) {
+      activityNoteParts.push(`สถานะ ${shop.subscription_status} → ${nextDraft.subscription_status}`);
+    }
+    if ((shop.billing_plan ?? "") !== nextDraft.billing_plan.trim()) {
+      activityNoteParts.push(`แผน ${shop.billing_plan ?? "-"} → ${nextDraft.billing_plan.trim() || "-"}`);
+    }
+    if ((shop.billing_due_date ?? "") !== (nextDraft.billing_due_date || "")) {
+      activityNoteParts.push(`ครบจ่าย ${shop.billing_due_date ?? "-"} → ${nextDraft.billing_due_date || "-"}`);
+    }
+    if ((shop.expires_at ?? "") !== (nextDraft.expires_at || "")) {
+      activityNoteParts.push(`หมดอายุ ${shop.expires_at ?? "-"} → ${nextDraft.expires_at || "-"}`);
+    }
+    if ((shop.billing_note ?? "") !== nextDraft.billing_note.trim()) {
+      activityNoteParts.push("แก้หมายเหตุบิล");
+    }
+
+    if (activityNoteParts.length > 0) {
+      void recordActivity({
+        action: shop.subscription_status !== nextDraft.subscription_status ? "status_change" : "billing_update",
+        target_shop_id: shop.id,
+        target_shop_slug: shop.slug,
+        target_shop_name: shop.name,
+        before_status: shop.subscription_status,
+        after_status: nextDraft.subscription_status,
+        note: activityNoteParts.join(" · ")
+      });
+    }
+
     setShopRows((items) => items.map((item) => (item.id === shopId ? { ...item, ...nextDraft, billing_plan: nextDraft.billing_plan.trim() || null, billing_due_date: nextDraft.billing_due_date || null, expires_at: nextDraft.expires_at || null, billing_note: nextDraft.billing_note.trim() || null } : item)));
     setShopDrafts((items) => ({ ...items, [shopId]: nextDraft }));
     toast.success("บันทึกข้อมูลร้านแล้ว");
@@ -142,6 +201,16 @@ export function PlatformAdminConsole({ shops, initialBookings, services }: Props
       toast.error(error.message);
       return;
     }
+
+    void recordActivity({
+      action: "shop_deleted",
+      target_shop_id: null,
+      target_shop_slug: shop.slug,
+      target_shop_name: shop.name,
+      before_status: shop.subscription_status,
+      after_status: null,
+      note: "ลบร้านออกจาก control center"
+    });
 
     setShopRows((items) => items.filter((item) => item.id !== shop.id));
     setBookings((items) => items.filter((item) => item.shop_id !== shop.id));
@@ -257,6 +326,35 @@ export function PlatformAdminConsole({ shops, initialBookings, services }: Props
             <Info label="Shop UUID" value={selectedShop?.id ?? "-"} copy />
             <Info label="โทร" value={selectedShop?.phone ?? "-"} />
             <Info label="LINE" value={selectedShop?.line_id ?? "-"} />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>กิจกรรมล่าสุด</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3">
+            {activityRows.length === 0 ? (
+              <p className="text-sm text-muted-foreground">ยังไม่มี log ของ control center</p>
+            ) : (
+              activityRows.slice(0, 10).map((entry) => (
+                <div key={entry.id} className="rounded-md border bg-muted/30 p-3 text-sm">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge className="bg-muted text-muted-foreground">{platformActivityLabel(entry.action)}</Badge>
+                      <span className="font-medium">{entry.target_shop_name}</span>
+                      <span className="text-muted-foreground">({entry.target_shop_slug})</span>
+                    </div>
+                    <span className="text-xs text-muted-foreground">{formatThaiDateTime(entry.created_at)}</span>
+                  </div>
+                  <p className="mt-2 text-muted-foreground">{entry.note || "-"}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    โดย {entry.actor_email}
+                    {entry.before_status || entry.after_status ? ` · ${entry.before_status ?? "-"} → ${entry.after_status ?? "-"}` : ""}
+                  </p>
+                </div>
+              ))
+            )}
           </CardContent>
         </Card>
 

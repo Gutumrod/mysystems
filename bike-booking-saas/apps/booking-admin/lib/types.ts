@@ -1,6 +1,7 @@
 export type WeekdayKey = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
 export type ServiceDurationUnit = "hour" | "day";
 export type BookingKind = "hourly" | "daily";
+export type PlatformActivityAction = "status_change" | "billing_update" | "shop_deleted";
 
 export type WorkingDay = {
   enabled: boolean;
@@ -26,6 +27,20 @@ export type Shop = {
   billing_due_date?: string | null;
   expires_at?: string | null;
   billing_note?: string | null;
+};
+
+export type PlatformActivityLog = {
+  id: string;
+  actor_user_id: string | null;
+  actor_email: string;
+  action: PlatformActivityAction;
+  target_shop_id: string | null;
+  target_shop_slug: string;
+  target_shop_name: string;
+  before_status: Shop["subscription_status"] | null;
+  after_status: Shop["subscription_status"] | null;
+  note: string | null;
+  created_at: string;
 };
 
 export type ServiceItem = {
