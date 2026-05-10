@@ -1,6 +1,6 @@
 import { endOfMonth, endOfWeek, format, isWithinInterval, parse, startOfMonth, startOfWeek } from "date-fns";
 import { th } from "date-fns/locale";
-import type { Booking, BookingKind, BookingStatus, ServiceItem } from "./types";
+import type { Booking, BookingKind, BookingStatus, ServiceItem, Shop } from "./types";
 
 export function cn(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(" ");
@@ -49,6 +49,52 @@ export function platformActivityLabel(action: "status_change" | "billing_update"
     billing_update: "อัปเดตบิล",
     shop_deleted: "ลบร้าน"
   }[action];
+}
+
+export function getShopBillingHealth(shop: Pick<Shop, "billing_due_date" | "expires_at" | "billing_plan" | "subscription_status">, now = formatBangkokISODate()) {
+  if (!shop.billing_plan && !shop.billing_due_date && !shop.expires_at) {
+    return {
+      key: "unbilled",
+      label: "ยังไม่ตั้งบิล",
+      tone: "muted",
+      sortRank: 4
+    } as const;
+  }
+
+  if (shop.expires_at && shop.expires_at < now) {
+    return {
+      key: "expired",
+      label: "หมดอายุ",
+      tone: "destructive",
+      sortRank: 0
+    } as const;
+  }
+
+  if (shop.billing_due_date && shop.billing_due_date < now) {
+    return {
+      key: "overdue",
+      label: "ค้างชำระ",
+      tone: "warning",
+      sortRank: 1
+    } as const;
+  }
+
+  const dueSoonThreshold = getBangkokISODateOffset(7);
+  if (shop.billing_due_date && shop.billing_due_date >= now && shop.billing_due_date <= dueSoonThreshold) {
+    return {
+      key: "due_soon",
+      label: "ครบจ่ายใกล้ถึง",
+      tone: "warning",
+      sortRank: 2
+    } as const;
+  }
+
+  return {
+    key: "current",
+    label: shop.subscription_status === "active" ? "ปกติ" : "ยังใช้งานได้",
+    tone: "success",
+    sortRank: 3
+  } as const;
 }
 
 export function statusLabel(status: BookingStatus) {

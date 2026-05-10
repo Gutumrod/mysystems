@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { createBrowserClient } from "@/lib/supabase/client";
 import type { Booking, BookingStatus, PlatformActivityLog, ServiceItem } from "@/lib/types";
-import { bookingViewKindLabel, formatBookingSchedule, formatThaiDate, formatThaiDateTime, platformActivityLabel, serviceNames, statusClass, statusLabel } from "@/lib/utils";
+import { bookingViewKindLabel, formatBookingSchedule, formatThaiDate, formatThaiDateTime, getBangkokISODateOffset, getShopBillingHealth, platformActivityLabel, serviceNames, statusClass, statusLabel } from "@/lib/utils";
 
 export type PlatformShop = {
   id: string;
@@ -248,6 +248,19 @@ export function PlatformAdminConsole({ shops, initialBookings, services, activit
   });
 
   const selectedDraft = selectedShop ? shopDrafts[selectedShop.id] ?? buildDraftFromShop(selectedShop) : null;
+  const selectedBillingHealth = selectedShop ? getShopBillingHealth(selectedShop, today) : null;
+
+  async function extendBilling(days: number) {
+    if (!selectedShop || !selectedDraft) return;
+    const dueDate = getBangkokISODateOffset(days);
+    const nextBillingNote = [selectedDraft.billing_note.trim(), `ต่ออายุ ${days} วัน ถึง ${dueDate}`].filter(Boolean).join(" · ");
+    await persistShop(selectedShop.id, {
+      subscription_status: "active",
+      billing_due_date: dueDate,
+      expires_at: dueDate,
+      billing_note: nextBillingNote
+    });
+  }
 
   return (
     <div className="grid gap-5 xl:grid-cols-[360px_1fr]">
@@ -278,6 +291,7 @@ export function PlatformAdminConsole({ shops, initialBookings, services, activit
             <div className="max-h-[520px] overflow-auto rounded-md border">
               {filteredShops.map((shop) => {
                 const active = selectedShopId === shop.id;
+                const billingHealth = getShopBillingHealth(shop, today);
                 return (
                   <button
                     key={shop.id}
@@ -292,7 +306,7 @@ export function PlatformAdminConsole({ shops, initialBookings, services, activit
                     <span className="text-xs text-muted-foreground">{shop.slug}</span>
                     <span className="break-all text-[11px] text-muted-foreground">{shop.id}</span>
                     <span className="text-[11px] text-muted-foreground">
-                      {shop.subscription_status}
+                      {shop.subscription_status} · {billingHealth.label}
                       {shop.billing_due_date ? ` · ครบจ่าย ${formatThaiDate(shop.billing_due_date)}` : ""}
                       {shop.expires_at ? ` · หมดอายุ ${formatThaiDate(shop.expires_at)}` : ""}
                     </span>
@@ -368,6 +382,10 @@ export function PlatformAdminConsole({ shops, initialBookings, services, activit
                 <div className="rounded-md border bg-muted/40 p-3">
                   <p className="text-xs uppercase text-muted-foreground">สถานะปัจจุบัน</p>
                   <p className="mt-1 font-medium capitalize">{selectedShop.subscription_status}</p>
+                </div>
+                <div className="rounded-md border bg-muted/40 p-3">
+                  <p className="text-xs uppercase text-muted-foreground">สถานะบิล</p>
+                  <p className="mt-1 font-medium">{selectedBillingHealth?.label ?? "-"}</p>
                 </div>
                 <div className="rounded-md border bg-muted/40 p-3">
                   <p className="text-xs uppercase text-muted-foreground">แพ็กเกจบิล</p>
@@ -496,6 +514,30 @@ export function PlatformAdminConsole({ shops, initialBookings, services, activit
                   onClick={() => void persistShop(selectedShop.id, { subscription_status: "trial" })}
                 >
                   ตั้ง trial
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={savingShopId === selectedShop.id}
+                  onClick={() => void extendBilling(7)}
+                >
+                  ต่อ 7 วัน
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={savingShopId === selectedShop.id}
+                  onClick={() => void extendBilling(30)}
+                >
+                  ต่อ 30 วัน
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={savingShopId === selectedShop.id}
+                  onClick={() => void extendBilling(365)}
+                >
+                  ต่อ 365 วัน
                 </Button>
                 <Button
                   type="button"

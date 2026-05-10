@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { hasSupabaseEnv } from "@/lib/mock-data";
 import type { Booking, PlatformActivityLog, ServiceItem } from "@/lib/types";
-import { formatBangkokISODate, formatThaiDate, getBangkokISODateOffset } from "@/lib/utils";
+import { formatBangkokISODate, formatThaiDate, getBangkokISODateOffset, getShopBillingHealth } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -53,6 +53,11 @@ export default async function PlatformPage() {
   const shopRows = shops ?? [];
   const today = formatBangkokISODate();
   const dueSoonThreshold = getBangkokISODateOffset(7);
+  const billingSortedShops = [...shopRows].sort((a, b) => {
+    const aHealth = getShopBillingHealth(a, today);
+    const bHealth = getShopBillingHealth(b, today);
+    return aHealth.sortRank - bHealth.sortRank || a.name.localeCompare(b.name, "th");
+  });
   const [{ data: bookings }, { data: services }, { data: activityLogs }] = await Promise.all([
     supabase
       .schema("bike_booking")
@@ -82,7 +87,9 @@ export default async function PlatformPage() {
   const activeShops = shopRows.filter((shop) => shop.subscription_status === "active").length;
   const suspendedShops = shopRows.filter((shop) => shop.subscription_status === "suspended").length;
   const dueSoonShops = shopRows.filter((shop) => Boolean(shop.billing_due_date && shop.billing_due_date >= today && shop.billing_due_date <= dueSoonThreshold)).length;
+  const overdueShops = shopRows.filter((shop) => Boolean(shop.billing_due_date && shop.billing_due_date < today)).length;
   const expiredShops = shopRows.filter((shop) => Boolean(shop.expires_at && shop.expires_at < today)).length;
+  const unbilledShops = shopRows.filter((shop) => !shop.billing_plan && !shop.billing_due_date && !shop.expires_at).length;
   const totalBookings = bookingRows.length;
 
   const bookingCountByShop = new Map<string, number>();
@@ -110,9 +117,11 @@ export default async function PlatformPage() {
         <Stat title="การจองทั้งหมด" value={totalBookings} icon={BarChart3} />
       </section>
 
-      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-2">
+      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <Stat title="ครบจ่ายใน 7 วัน" value={dueSoonShops} icon={Clock3} />
+        <Stat title="ค้างชำระ" value={overdueShops} icon={AlertTriangle} />
         <Stat title="หมดอายุแล้ว" value={expiredShops} icon={AlertTriangle} />
+        <Stat title="ยังไม่ตั้งบิล" value={unbilledShops} icon={Clock3} />
       </section>
 
       <Card>
@@ -134,29 +143,35 @@ export default async function PlatformPage() {
               </tr>
             </thead>
             <tbody>
-              {shopRows.map((shop) => (
-                <tr key={shop.id} className="border-b last:border-b-0">
-                  <td className="py-4 pr-4 font-medium">{shop.name}</td>
-                  <td className="py-4 pr-4 text-muted-foreground">{shop.slug}</td>
-                  <td className="py-4 pr-4">
-                    <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium capitalize">
-                      {shop.subscription_status}
-                    </span>
-                  </td>
-                  <td className="py-4 pr-4 text-muted-foreground">{shop.billing_plan ?? "-"}</td>
-                  <td className="py-4 pr-4 text-muted-foreground">{shop.billing_due_date ? formatThaiDate(shop.billing_due_date) : "-"}</td>
-                  <td className="py-4 pr-4 text-muted-foreground">{shop.expires_at ? formatThaiDate(shop.expires_at) : "-"}</td>
-                  <td className="py-4 pr-4 text-muted-foreground">{shop.phone ?? "-"}</td>
-                  <td className="py-4 pr-4 text-muted-foreground">{bookingCountByShop.get(shop.id) ?? 0}</td>
-                </tr>
-              ))}
+              {billingSortedShops.map((shop) => {
+                const billingHealth = getShopBillingHealth(shop, today);
+                return (
+                  <tr key={shop.id} className="border-b last:border-b-0">
+                    <td className="py-4 pr-4 font-medium">{shop.name}</td>
+                    <td className="py-4 pr-4 text-muted-foreground">{shop.slug}</td>
+                    <td className="py-4 pr-4">
+                      <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium capitalize">
+                        {shop.subscription_status}
+                      </span>
+                    </td>
+                    <td className="py-4 pr-4">
+                      <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium">{billingHealth.label}</span>
+                    </td>
+                    <td className="py-4 pr-4 text-muted-foreground">{shop.billing_plan ?? "-"}</td>
+                    <td className="py-4 pr-4 text-muted-foreground">{shop.billing_due_date ? formatThaiDate(shop.billing_due_date) : "-"}</td>
+                    <td className="py-4 pr-4 text-muted-foreground">{shop.expires_at ? formatThaiDate(shop.expires_at) : "-"}</td>
+                    <td className="py-4 pr-4 text-muted-foreground">{shop.phone ?? "-"}</td>
+                    <td className="py-4 pr-4 text-muted-foreground">{bookingCountByShop.get(shop.id) ?? 0}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </CardContent>
       </Card>
 
       <PlatformAdminConsole
-        shops={shopRows}
+        shops={billingSortedShops}
         initialBookings={bookingRows}
         services={services ?? []}
         activityLogs={activityRows}
