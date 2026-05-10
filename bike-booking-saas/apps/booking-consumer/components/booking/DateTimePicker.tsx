@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import type { BookingKind, BookingSlot, Shop, ShopHoliday } from "@/lib/types";
-import { buildTimeSlots, cn, isClosedDate } from "@/lib/utils";
+import { buildTimeSlots, cn, getBookingDateAvailability, formatThaiDate } from "@/lib/utils";
 
 type Props = {
   shop: Shop;
@@ -44,10 +44,26 @@ export function DateTimePicker({
   onTimeChange
 }: Props) {
   const slots = bookingKind === "hourly" && date ? buildTimeSlots(shop, date, Math.max(durationValue, 1), bookings) : [];
-  const selectedDateClosed = date ? isClosedDate(shop, holidays, new Date(`${date}T00:00:00`)) : false;
+  const selectedDateStatus = date ? getBookingDateAvailability(shop, holidays, new Date(`${date}T00:00:00`)) : null;
+  const selectedEndDateStatus = bookingKind === "daily" && endDate ? getBookingDateAvailability(shop, holidays, new Date(`${endDate}T00:00:00`)) : null;
 
   return (
     <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+        <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-1 text-emerald-100">
+          <span className="size-2 rounded-full bg-emerald-400" />
+          เปิดรับจอง
+        </span>
+        <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/20 bg-amber-500/10 px-2 py-1 text-amber-100">
+          <span className="size-2 rounded-full bg-amber-400" />
+          วันหยุดประจำร้าน
+        </span>
+        <span className="inline-flex items-center gap-1 rounded-full border border-rose-500/20 bg-rose-500/10 px-2 py-1 text-rose-100">
+          <span className="size-2 rounded-full bg-rose-400" />
+          วันหยุดเพิ่มเติม
+        </span>
+      </div>
+
       <Field>
         <FieldLabel htmlFor="booking_date">{bookingKind === "daily" ? "วันที่เริ่ม *" : "วันที่ *"}</FieldLabel>
         <Input
@@ -66,7 +82,35 @@ export function DateTimePicker({
           aria-invalid={Boolean(dateError)}
         />
         <FieldError>{dateError}</FieldError>
-        {selectedDateClosed ? <p className="text-sm text-red-600">ร้านหยุดในวันที่เลือก กรุณาเลือกวันอื่น</p> : null}
+        {selectedDateStatus ? (
+          <div
+            className={cn(
+              "flex items-start gap-2 rounded-lg border px-3 py-2 text-sm",
+              selectedDateStatus.closed
+                ? selectedDateStatus.kind === "extra_holiday"
+                  ? "border-rose-500/30 bg-rose-500/10 text-rose-100"
+                  : "border-amber-500/30 bg-amber-500/10 text-amber-100"
+                : "border-emerald-500/30 bg-emerald-500/10 text-emerald-100"
+            )}
+          >
+            <span
+              className={cn(
+                "mt-1 size-2 rounded-full",
+                selectedDateStatus.closed
+                  ? selectedDateStatus.kind === "extra_holiday"
+                    ? "bg-rose-400"
+                    : "bg-amber-400"
+                  : "bg-emerald-400"
+              )}
+            />
+            <div className="min-w-0">
+              <p className="font-medium">
+                {formatThaiDate(date)} · {selectedDateStatus.label}
+              </p>
+              <p className="text-xs text-muted-foreground">{selectedDateStatus.detail}</p>
+            </div>
+          </div>
+        ) : null}
       </Field>
 
       {bookingKind === "daily" ? (
@@ -82,8 +126,37 @@ export function DateTimePicker({
           />
           <FieldError>{endDateError}</FieldError>
           <p className="text-sm text-muted-foreground">
-            งานแบบค้างหลายวันจะนับโควตาตามวัน ไม่ใช้ช่องเวลา และต้องไม่น้อยกว่าระยะเวลาที่เลือก ({durationValue} วัน)
+            งานแบบค้างหลายวันจะนับเฉพาะวันที่ร้านเปิดจริง ถ้ามีวันหยุดแทรกกลางทาง ระบบจะเลื่อนวันสิ้นสุดออกให้ครบ ({durationValue} วันทำการ)
           </p>
+          {selectedEndDateStatus ? (
+            <div
+              className={cn(
+                "flex items-start gap-2 rounded-lg border px-3 py-2 text-sm",
+                selectedEndDateStatus.closed
+                  ? selectedEndDateStatus.kind === "extra_holiday"
+                    ? "border-rose-500/30 bg-rose-500/10 text-rose-100"
+                    : "border-amber-500/30 bg-amber-500/10 text-amber-100"
+                  : "border-emerald-500/30 bg-emerald-500/10 text-emerald-100"
+              )}
+            >
+              <span
+                className={cn(
+                  "mt-1 size-2 rounded-full",
+                  selectedEndDateStatus.closed
+                    ? selectedEndDateStatus.kind === "extra_holiday"
+                      ? "bg-rose-400"
+                      : "bg-amber-400"
+                    : "bg-emerald-400"
+                )}
+              />
+              <div className="min-w-0">
+                <p className="font-medium">
+                  {formatThaiDate(endDate)} · {selectedEndDateStatus.label}
+                </p>
+                <p className="text-xs text-muted-foreground">{selectedEndDateStatus.detail}</p>
+              </div>
+            </div>
+          ) : null}
         </Field>
       ) : (
         <Field>
@@ -94,7 +167,7 @@ export function DateTimePicker({
                 type="button"
                 variant={time === slot.start ? "default" : "outline"}
                 key={slot.start}
-                disabled={!slot.available || selectedDateClosed}
+                disabled={!slot.available || selectedDateStatus?.closed}
                 onClick={() => onTimeChange(slot.start)}
                 className={cn(!slot.available && "line-through")}
               >

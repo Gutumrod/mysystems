@@ -28,15 +28,66 @@ export function formatBangkokISODate(date: Date) {
   return date.toLocaleDateString("en-CA", { timeZone: "Asia/Bangkok" });
 }
 
-export function isClosedDate(shop: Shop, holidays: ShopHoliday[], date: Date) {
+export type BookingDateAvailability = {
+  kind: "past" | "open" | "regular_holiday" | "extra_holiday";
+  closed: boolean;
+  label: string;
+  detail: string;
+  reason: string | null;
+};
+
+function midnightToday() {
+  return set(new Date(), { hours: 0, minutes: 0, seconds: 0, milliseconds: 0 });
+}
+
+export function getBookingDateAvailability(shop: Shop, holidays: ShopHoliday[], date: Date): BookingDateAvailability {
   const iso = format(date, "yyyy-MM-dd");
   const dayKey = toWeekdayKey(date);
-  return (
-    isBefore(date, set(new Date(), { hours: 0, minutes: 0, seconds: 0, milliseconds: 0 })) ||
-    shop.regular_holidays.includes(dayKey) ||
-    !shop.working_hours[dayKey]?.enabled ||
-    holidays.some((holiday) => holiday.holiday_date === iso)
-  );
+
+  if (isBefore(date, midnightToday())) {
+    return {
+      kind: "past",
+      closed: true,
+      label: "วันที่ผ่านมาแล้ว",
+      detail: "เลือกวันนี้หรือวันในอนาคต",
+      reason: null
+    };
+  }
+
+  const extraHoliday = holidays.find((holiday) => holiday.holiday_date === iso);
+  if (extraHoliday) {
+    return {
+      kind: "extra_holiday",
+      closed: true,
+      label: "วันหยุดเพิ่มเติม",
+      detail: extraHoliday.reason?.trim() ? extraHoliday.reason : "ร้านหยุดพิเศษในวันนี้",
+      reason: extraHoliday.reason ?? null
+    };
+  }
+
+  const workingDay = shop.working_hours[dayKey];
+  const regularHoliday = shop.regular_holidays.includes(dayKey) || !workingDay?.enabled;
+  if (regularHoliday) {
+    return {
+      kind: "regular_holiday",
+      closed: true,
+      label: "วันหยุดประจำร้าน",
+      detail: "ตามตารางเปิดทำการของร้าน",
+      reason: null
+    };
+  }
+
+  return {
+    kind: "open",
+    closed: false,
+    label: "เปิดรับจอง",
+    detail: "เลือกจองได้ตามเวลาทำการ",
+    reason: null
+  };
+}
+
+export function isClosedDate(shop: Shop, holidays: ShopHoliday[], date: Date) {
+  return getBookingDateAvailability(shop, holidays, date).closed;
 }
 
 export function resolveSelectedBookingMode(serviceIds: string[], services: ServiceItem[]): { kind: BookingKind | null; value: number; mixed: boolean } {
@@ -66,11 +117,28 @@ export function calculateEndTime(date: string, start: string, durationHours: num
   return format(addHours(startDate, Math.max(durationHours, 1)), "HH:mm");
 }
 
-export function calculateMinimumDailyEndDate(startDate: string, requiredDays: number) {
+export function calculateMinimumDailyEndDate(startDate: string, requiredDays: number, shop: Shop, holidays: ShopHoliday[]) {
   if (!startDate) return "";
   const parsedStart = parse(startDate, "yyyy-MM-dd", new Date());
   const safeDays = Math.max(Math.floor(requiredDays), 1);
-  return format(addDays(parsedStart, safeDays - 1), "yyyy-MM-dd");
+  let countedDays = 0;
+  let cursor = parsedStart;
+  let lastOpenDate = parsedStart;
+
+  for (let guard = 0; guard < 370 && countedDays < safeDays; guard += 1) {
+    if (!isClosedDate(shop, holidays, cursor)) {
+      countedDays += 1;
+      lastOpenDate = cursor;
+    }
+
+    if (countedDays >= safeDays) {
+      break;
+    }
+
+    cursor = addDays(cursor, 1);
+  }
+
+  return format(lastOpenDate, "yyyy-MM-dd");
 }
 
 function normalizedCapacity(value: number | undefined, fallback: number, minimum: number) {

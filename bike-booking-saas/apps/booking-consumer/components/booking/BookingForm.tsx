@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { BookingSlot, ServiceItem, Shop, ShopHoliday } from "@/lib/types";
 import { bookingSchema, type BookingFormValues } from "@/lib/validations";
-import { calculateEndTime, calculateMinimumDailyEndDate, cn, resolveSelectedBookingMode } from "@/lib/utils";
+import { calculateEndTime, calculateMinimumDailyEndDate, cn, getBookingDateAvailability, resolveSelectedBookingMode } from "@/lib/utils";
 import { createBrowserClient } from "@/lib/supabase/client";
 import { BikeModelAutocomplete } from "./BikeModelAutocomplete";
 import { DateTimePicker } from "./DateTimePicker";
@@ -68,7 +68,9 @@ export function BookingForm({ shop, services, holidays, bookings, demoMode = fal
   const isDailyBooking = bookingKind === "daily";
   const hasMixedServices = selectedMode.mixed;
   const durationValue = selectedMode.value;
-  const minimumEndDate = isDailyBooking && bookingDate ? calculateMinimumDailyEndDate(bookingDate, durationValue) : "";
+  const bookingDateAvailability = bookingDate ? getBookingDateAvailability(shop, holidays, new Date(`${bookingDate}T00:00:00`)) : null;
+  const bookingEndDateAvailability = bookingEndDate ? getBookingDateAvailability(shop, holidays, new Date(`${bookingEndDate}T00:00:00`)) : null;
+  const minimumEndDate = isDailyBooking && bookingDate ? calculateMinimumDailyEndDate(bookingDate, durationValue, shop, holidays) : "";
 
   useEffect(() => {
     setValue("booking_kind", bookingKind, { shouldValidate: true });
@@ -79,7 +81,27 @@ export function BookingForm({ shop, services, holidays, bookings, demoMode = fal
       setValue("booking_time_start", "", { shouldValidate: true });
       setValue("booking_time_end", "", { shouldValidate: true });
       setValue("minimum_booking_end_date", minimumEndDate, { shouldValidate: true });
-      if (bookingEndDate) {
+      if (bookingDateAvailability?.closed) {
+        setError(
+          "booking_date",
+          {
+            type: "validate",
+            message: bookingDateAvailability.kind === "extra_holiday" ? "วันที่เริ่มตรงกับวันหยุดเพิ่มเติมของร้าน" : "ร้านหยุดในวันที่เลือก"
+          }
+        );
+      } else {
+        clearErrors("booking_date");
+      }
+
+      if (bookingEndDateAvailability?.closed) {
+        setError(
+          "booking_end_date",
+          {
+            type: "validate",
+            message: bookingEndDateAvailability.kind === "extra_holiday" ? "วันสิ้นสุดตรงกับวันหยุดเพิ่มเติมของร้าน" : "วันสิ้นสุดต้องเป็นวันเปิดรับจอง"
+          }
+        );
+      } else if (bookingEndDate) {
         if (minimumEndDate && bookingEndDate < minimumEndDate) {
           setError("booking_end_date", { type: "validate", message: "วันสิ้นสุดสั้นกว่าระยะเวลาบริการรวม" });
         } else {
@@ -87,7 +109,7 @@ export function BookingForm({ shop, services, holidays, bookings, demoMode = fal
         }
       }
     }
-  }, [bookingKind, bookingEndDate, clearErrors, minimumEndDate, setError, setValue]);
+  }, [bookingDateAvailability, bookingEndDate, bookingEndDateAvailability, bookingKind, clearErrors, minimumEndDate, setError, setValue]);
 
   async function onSubmit(values: BookingFormValues) {
     if (hasMixedServices) {
