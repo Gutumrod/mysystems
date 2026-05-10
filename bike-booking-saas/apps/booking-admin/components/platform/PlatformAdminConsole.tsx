@@ -309,20 +309,21 @@ export function PlatformAdminConsole({ shops, initialBookings, services, activit
 
   async function extendBilling(days: number) {
     if (!selectedShop || !selectedDraft) return;
-    const dueDate = getBangkokISODateOffset(days);
-    const currentExpiry = selectedShop.expires_at ?? "";
-    const nextExpiry = currentExpiry && currentExpiry > dueDate ? currentExpiry : dueDate;
+    const renewalBaseDate = [today, selectedShop.billing_due_date ?? "", selectedShop.expires_at ?? ""]
+      .filter(Boolean)
+      .sort()
+      .pop() ?? today;
+    const dueDate = getBangkokISODateOffset(days, new Date(`${renewalBaseDate}T00:00:00+07:00`));
     const nextBillingNote = [
       selectedDraft.billing_note.trim(),
-      `ต่ออายุ ${days} วัน ถึง ${dueDate}`,
-      nextExpiry !== dueDate ? `คงหมดอายุเดิม ${formatThaiDate(nextExpiry)}` : null
+      `ต่ออายุ ${days} วัน จาก ${renewalBaseDate} ถึง ${dueDate}`
     ]
       .filter(Boolean)
       .join(" · ");
     await persistShop(selectedShop.id, {
       subscription_status: "active",
       billing_due_date: dueDate,
-      expires_at: nextExpiry,
+      expires_at: dueDate,
       billing_note: nextBillingNote
     }, "renewal");
   }
