@@ -23,7 +23,7 @@
 
 ## commit ล่าสุด
 
-- ยังไม่ commit ตอนบันทึก note นี้
+- `50f83c1 feat: add billing history and signup blueprint`
 
 ## ข้อควรระวัง
 
