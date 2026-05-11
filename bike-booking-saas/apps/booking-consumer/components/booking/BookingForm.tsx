@@ -68,9 +68,18 @@ export function BookingForm({ shop, services, holidays, bookings, demoMode = fal
   const isDailyBooking = bookingKind === "daily";
   const hasMixedServices = selectedMode.mixed;
   const durationValue = selectedMode.value;
-  const bookingDateAvailability = bookingDate ? getBookingDateAvailability(shop, holidays, new Date(`${bookingDate}T00:00:00`)) : null;
-  const bookingEndDateAvailability = bookingEndDate ? getBookingDateAvailability(shop, holidays, new Date(`${bookingEndDate}T00:00:00`)) : null;
-  const minimumEndDate = isDailyBooking && bookingDate ? calculateMinimumDailyEndDate(bookingDate, durationValue, shop, holidays) : "";
+  const bookingDateAvailability = useMemo(
+    () => (bookingDate ? getBookingDateAvailability(shop, holidays, new Date(`${bookingDate}T00:00:00`)) : null),
+    [bookingDate, holidays, shop]
+  );
+  const bookingEndDateAvailability = useMemo(
+    () => (bookingEndDate ? getBookingDateAvailability(shop, holidays, new Date(`${bookingEndDate}T00:00:00`)) : null),
+    [bookingEndDate, holidays, shop]
+  );
+  const minimumEndDate = useMemo(
+    () => (isDailyBooking && bookingDate ? calculateMinimumDailyEndDate(bookingDate, durationValue, shop, holidays) : ""),
+    [bookingDate, durationValue, holidays, isDailyBooking, shop]
+  );
 
   useEffect(() => {
     setValue("booking_kind", bookingKind, { shouldValidate: true });

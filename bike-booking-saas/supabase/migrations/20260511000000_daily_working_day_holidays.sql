@@ -388,6 +388,8 @@ begin
 
   if p_booking_kind is null then
     p_booking_kind := v_booking_kind;
+  else
+    p_booking_kind := p_booking_kind::bike_booking.booking_kind;
   end if;
 
   if p_booking_kind <> v_booking_kind then
@@ -438,7 +440,7 @@ begin
   ) values (
     p_shop_id, p_customer_name, p_customer_phone, p_customer_fb, p_customer_line_id,
     p_bike_model, p_bike_year, p_service_items,
-    case when p_booking_kind = 'daily' then 'daily' else 'hourly' end,
+    p_booking_kind,
     p_booking_date,
     case when p_booking_kind = 'daily' then p_booking_end_date else null end,
     case when p_booking_kind = 'daily' then null else p_booking_time_start end,
@@ -450,6 +452,10 @@ begin
   return v_booking_id;
 end;
 $$;
+
+drop function if exists bike_booking.create_public_booking(
+  uuid, text, text, text, text, text, int, uuid[], date, text, date, time, time, text
+);
 
 revoke execute on function bike_booking.create_public_booking(
   uuid, text, text, text, text, text, int, uuid[], date, bike_booking.booking_kind, date, time, time, text
