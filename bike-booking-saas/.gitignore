@@ -11,13 +11,14 @@ npm-debug.log*
 .claude/
 logs/
 reports/
-.backups/
-.customer-page*.png
-.dev-*.log
 do_move.bat
 supabase/.temp/
 supabase/backups/
+.backups/
+*.log
+.DS_Store
 
 # Build artifacts
 tsconfig.tsbuildinfo
 **/tsconfig.tsbuildinfo
+

@@ -1,21 +1,77 @@
 import { addDays } from "date-fns";
 import { headers } from "next/headers";
+import { unstable_cache } from "next/cache";
 import { AlertCircle } from "lucide-react";
 import { BookingForm } from "@/components/booking/BookingForm";
 import { Card, CardContent } from "@/components/ui/card";
 import { demoBookings, demoHolidays, demoServices, demoShop, hasSupabaseEnv } from "@/lib/mock-data";
 import { formatBangkokISODate, getShopId } from "@/lib/utils";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createPublicSupabaseServerClient } from "@/lib/supabase/server";
 import type { BookingSlot, ServiceItem, Shop, ShopHoliday } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
+export const preferredRegion = "sin1";
+
+const SHOP_CACHE_SECONDS = 300;
+const AVAILABILITY_CACHE_SECONDS = 20;
+
+function getCachedShopBySlug(shopSlug: string) {
+  return unstable_cache(
+    async () => {
+      const supabase = createPublicSupabaseServerClient();
+      const { data } = await supabase.schema("bike_booking").from("shops").select("*").eq("slug", shopSlug).single<Shop>();
+      return data;
+    },
+    ["booking-consumer-shop-by-slug", shopSlug],
+    { revalidate: SHOP_CACHE_SECONDS, tags: [`booking-consumer-shop:${shopSlug}`] }
+  )();
+}
+
+function getCachedShopById(shopId: string) {
+  return unstable_cache(
+    async () => {
+      const supabase = createPublicSupabaseServerClient();
+      const { data } = await supabase.schema("bike_booking").from("shops").select("*").eq("id", shopId).single<Shop>();
+      return data;
+    },
+    ["booking-consumer-shop-by-id", shopId],
+    { revalidate: SHOP_CACHE_SECONDS, tags: [`booking-consumer-shop:${shopId}`] }
+  )();
+}
+
+function getCachedPublicBookingData(shopId: string, today: string, limit: string) {
+  return unstable_cache(
+    async () => {
+      const supabase = createPublicSupabaseServerClient();
+      const [{ data: services }, { data: holidays }, { data: bookings }] = await Promise.all([
+        supabase.schema("bike_booking").from("service_items").select("*").eq("shop_id", shopId).eq("is_active", true).order("sort_order").returns<ServiceItem[]>(),
+        supabase.schema("bike_booking").from("shop_holidays").select("*").eq("shop_id", shopId).gte("holiday_date", today).returns<ShopHoliday[]>(),
+        supabase
+          .schema("bike_booking")
+          .from("public_booking_slots")
+          .select("*")
+          .eq("shop_id", shopId)
+          .gte("booking_date", today)
+          .lte("booking_date", limit)
+          .returns<BookingSlot[]>()
+      ]);
+
+      return {
+        services: services ?? [],
+        holidays: holidays ?? [],
+        bookings: bookings ?? []
+      };
+    },
+    ["booking-consumer-public-data", shopId, today, limit],
+    { revalidate: AVAILABILITY_CACHE_SECONDS, tags: [`booking-consumer-availability:${shopId}`] }
+  )();
+}
 
 export default async function Page() {
   if (!hasSupabaseEnv()) {
     return <BookingShell shop={demoShop} services={demoServices} holidays={demoHolidays} bookings={demoBookings} demoMode />;
   }
 
-  const supabase = await createSupabaseServerClient();
   const now = new Date();
   const today = formatBangkokISODate(now);
   const limit = formatBangkokISODate(addDays(now, 45));
@@ -26,9 +82,7 @@ export default async function Page() {
   const shopSlug = headersList.get("x-shop-slug");
 
   // Step 1: Fetch the shop record (slug → production, UUID → local dev)
-  const { data: shop } = shopSlug
-    ? await supabase.schema("bike_booking").from("shops").select("*").eq("slug", shopSlug).single<Shop>()
-    : await supabase.schema("bike_booking").from("shops").select("*").eq("id", getShopId()).single<Shop>();
+  const shop = shopSlug ? await getCachedShopBySlug(shopSlug) : await getCachedShopById(getShopId());
 
   if (!shop) {
     return (
@@ -47,20 +101,9 @@ export default async function Page() {
   }
 
   // Step 2: Fetch services, holidays, and bookings in parallel using shop.id
-  const [{ data: services }, { data: holidays }, { data: bookings }] = await Promise.all([
-    supabase.schema("bike_booking").from("service_items").select("*").eq("shop_id", shop.id).eq("is_active", true).order("sort_order").returns<ServiceItem[]>(),
-    supabase.schema("bike_booking").from("shop_holidays").select("*").eq("shop_id", shop.id).gte("holiday_date", today).returns<ShopHoliday[]>(),
-    supabase
-      .schema("bike_booking")
-      .from("public_booking_slots")
-      .select("*")
-      .eq("shop_id", shop.id)
-      .gte("booking_date", today)
-      .lte("booking_date", limit)
-      .returns<BookingSlot[]>()
-  ]);
+  const { services, holidays, bookings } = await getCachedPublicBookingData(shop.id, today, limit);
 
-  return <BookingShell shop={shop} services={services ?? []} holidays={holidays ?? []} bookings={bookings ?? []} />;
+  return <BookingShell shop={shop} services={services} holidays={holidays} bookings={bookings} />;
 }
 
 function BookingShell({

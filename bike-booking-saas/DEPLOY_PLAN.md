@@ -72,20 +72,24 @@ bike-booking-saas/          ← GitHub repo เดียว
 
 subdomain ทั้งหมดเป็น ASCII ล้วน — ไม่มีปัญหา IDN/Punycode
 
-### Wildcard Subdomain (สำหรับอนาคต Multi-tenant)
+### Shop Subdomain Routing
 
-เมื่อต้องการให้แต่ละร้านมี URL ของตัวเอง เช่น:
-- `craftbikelab.booking.craftbikelab.com`
-- `topbike.booking.craftbikelab.com`
+ระบบปัจจุบันรองรับร้านผ่าน subdomain ของ `craftbikelab.com` แล้ว เช่น:
+- `kmorackbarcustom.craftbikelab.com`
+- `kmorackbarcustom-admin.craftbikelab.com`
 
-ต้องเพิ่ม DNS record:
+สำหรับการเปิดร้านใหม่แบบ manual ให้เพิ่ม alias/domain ไปที่ Vercel project กลาง:
+- customer → `craftbikelab-booking`
+- admin → `craftbikelab-booking-admin`
+
+ถ้าจะให้สร้างร้านจำนวนมากแบบอัตโนมัติในอนาคต ค่อยพิจารณา wildcard DNS:
 ```
-*.booking.craftbikelab.com  CNAME  cname.vercel-dns.com
+*.craftbikelab.com  CNAME  cname.vercel-dns.com
 ```
 
 และ Vercel project ต้องใช้ Plan ที่รองรับ wildcard domains (Pro ขึ้นไป)
 
-> **สถานะปัจจุบัน:** ระบบยังใช้ `NEXT_PUBLIC_SHOP_ID` แบบ hardcode ต่อ deployment — wildcard subdomain routing ยังไม่ได้ implement ใน middleware ฝั่ง apps/booking-consumer ต้องทำใน Phase ถัดไป
+> **สถานะปัจจุบัน:** production route ใช้ subdomain slug เป็น primary path แล้ว ส่วน `NEXT_PUBLIC_SHOP_ID` ยังจำเป็นสำหรับ base domain, preview deployments และ local dev ที่ไม่มี tenant slug
 
 ---
 
@@ -129,9 +133,9 @@ outputFileTracingRoot: join(process.cwd(), "../../..")
 |----------|---------------|-------|
 | `NEXT_PUBLIC_SUPABASE_URL` | `https://gsbbkdppaegrttcqmjuq.supabase.co` | ✅ ใช้ค่า dev ได้เลย |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | `eyJhbGci...` (ค่าจาก .env.local) | ✅ ใช้ค่า dev ได้เลย |
-| `NEXT_PUBLIC_SHOP_ID` | UUID ของร้าน fallback/default | ⚠️ **ต้องเปลี่ยนจาก 11111111-...-1111** |
+| `NEXT_PUBLIC_SHOP_ID` | UUID ของร้าน fallback/default | ✅ ใช้เฉพาะ base domain / preview / local fallback |
 
-> **หมายเหตุ `NEXT_PUBLIC_SHOP_ID`:** ค่านี้ยังจำเป็นสำหรับ `booking.craftbikelab.com` และ preview deployments บน `*.vercel.app` เพราะ hostname พวกนี้ไม่มี tenant slug ให้ middleware ใช้ resolve ร้านโดยตรง ส่วน tenant subdomain จริง เช่น `bangkok-bike-care.booking.craftbikelab.com` จะใช้ slug จาก hostname ก่อน แล้วค่อย fallback มาที่ตัวแปรนี้ถ้าไม่มี slug
+> **หมายเหตุ `NEXT_PUBLIC_SHOP_ID`:** ค่านี้ยังจำเป็นสำหรับ `booking.craftbikelab.com` และ preview deployments บน `*.vercel.app` เพราะ hostname พวกนี้ไม่มี tenant slug ให้ middleware ใช้ resolve ร้านโดยตรง ส่วน tenant subdomain จริง เช่น `kmorackbarcustom.craftbikelab.com` จะใช้ slug จาก hostname ก่อน แล้วค่อย fallback มาที่ตัวแปรนี้ถ้าไม่มี slug
 
 > **NEXT_PUBLIC_** variables จะถูก embed ใน JavaScript bundle — อย่าใส่ข้อมูลที่ต้องการซ่อน ค่าทั้งสามรายการนี้ถือว่า public ได้
 
@@ -143,7 +147,7 @@ outputFileTracingRoot: join(process.cwd(), "../../..")
 |----------|---------------|-------|
 | `NEXT_PUBLIC_SUPABASE_URL` | `https://gsbbkdppaegrttcqmjuq.supabase.co` | ✅ ใช้ค่า dev ได้เลย |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | `eyJhbGci...` (ค่าจาก .env.local) | ✅ ใช้ค่า dev ได้เลย |
-| `NEXT_PUBLIC_SHOP_ID` | UUID ของร้านจริง | ⚠️ **ต้องเปลี่ยนจาก 11111111-...-1111** |
+| `NEXT_PUBLIC_SHOP_ID` | UUID ของร้าน fallback/default | ✅ ใช้เฉพาะ base domain / preview / local fallback |
 | `SUPABASE_SERVICE_ROLE_KEY` | ดูจาก Supabase Project Settings → API | optional (ยังไม่ถูกใช้ในโค้ดปัจจุบัน) |
 
 > **หมายเหตุ `SUPABASE_SERVICE_ROLE_KEY`:** ปัจจุบัน code เวอร์ชันนี้ยังไม่ได้ใช้ key นี้โดยตรง (auth ผ่าน anon key + RLS เป็นหลัก) จึงไม่ใช่ blocker สำหรับ deploy รอบแรก แต่สามารถเตรียมไว้ล่วงหน้าได้หากรอบถัดไปจะมี admin operations ที่ต้อง bypass RLS
@@ -167,7 +171,7 @@ outputFileTracingRoot: join(process.cwd(), "../../..")
 SELECT id, name, slug FROM bike_booking.shops;
 ```
 
-เอา `id` ของร้านจริงไปใส่ใน `NEXT_PUBLIC_SHOP_ID` ของทั้ง 2 projects
+ใช้ `id` ของร้าน fallback/default สำหรับ `NEXT_PUBLIC_SHOP_ID` ของทั้ง 2 projects ส่วนร้านจริงบน subdomain จะ resolve จาก `shops.slug`
 
 ---
 
@@ -184,7 +188,7 @@ SELECT id, name, slug FROM bike_booking.shops;
   - `*.vercel.app`
   - local dev
 
-ดังนั้น production ปัจจุบันยังเป็นแนว **one shop per deployment fallback เป็นหลัก** จนกว่าจะเปิด multi-tenant shop routing เต็มรูปแบบ
+ดังนั้น production ปัจจุบันเป็น **multi-tenant subdomain routing** แล้ว โดยยังมี env fallback สำหรับ base domain, preview และ local dev
 
 ### apps/booking-admin: middleware.ts วิเคราะห์
 
@@ -356,16 +360,20 @@ SELECT * FROM bike_booking.bookings ORDER BY created_at DESC LIMIT 5;
 
 รายการนี้ **ยังไม่ต้องทำตอน Phase 4** แต่บันทึกไว้เพื่อวางแผน:
 
-### 8.1 Subdomain-based Shop Detection
+### 8.1 Onboarding Automation
 
-ปัจจุบัน `apps/booking-consumer` มี middleware แล้ว แต่ยังพึ่ง `NEXT_PUBLIC_SHOP_ID` เป็น fallback สำคัญสำหรับ base domain / preview / local  
-ถ้าจะให้หลายร้านใช้ระบบเดียวกันแบบ production-ready เต็มรูปแบบ ต้องยกระดับ middleware + shop lookup flow ต่อ:
+ปัจจุบัน `apps/booking-consumer` และ `apps/booking-admin` resolve ร้านจาก subdomain ได้แล้ว งานถัดไปเพื่อให้ขายแบบ SaaS เต็มตัวคือทำ onboarding ร้านใหม่:
 
-และ `page.tsx`/server-side loader ต้องยึด slug จาก host เป็น primary path มากกว่า env-based default
+- สร้าง shop row
+- สร้าง service/schedule เริ่มต้น
+- สร้างหรือ invite owner
+- ผูก `shop_users`
+- เพิ่ม domain/alias ให้ Vercel
+- เปิด trial/active ตาม billing
 
 ### 8.2 Vercel Wildcard Domain
 
-ต้องใช้ Vercel Pro plan ขึ้นไป และตั้งค่า wildcard domain ใน project settings
+ถ้าต้องการเพิ่มร้านแบบอัตโนมัติจำนวนมากโดยไม่เพิ่ม alias ทีละร้าน ต้องใช้ Vercel Pro plan ขึ้นไป และตั้งค่า wildcard domain ใน project settings
 
 ### 8.3 Production Data Cleanup
 
@@ -468,7 +476,7 @@ git push
 SELECT id, name, slug FROM bike_booking.shops;
 ```
 
-จดค่า `id` (UUID) ของร้านจริงไว้ ใช้แทน `NEXT_PUBLIC_SHOP_ID` ทั้ง 2 Vercel projects
+จดค่า `id` (UUID) ของร้าน fallback/default ไว้ใช้กับ `NEXT_PUBLIC_SHOP_ID` ทั้ง 2 Vercel projects ร้านบน subdomain ใช้ `slug` เป็น primary path
 
 **[4] คัดลอก keys จาก Supabase Dashboard**
 

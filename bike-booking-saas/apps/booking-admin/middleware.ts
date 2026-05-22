@@ -8,19 +8,47 @@ type CookieToSet = {
   options?: Partial<ResponseCookie>
 }
 
+export function getShopSlugFromHost(host: string): string | null {
+  const parts = host.split(":");
+  const domainOnly = parts[0];
+  const domainParts = domainOnly.split(".");
+
+  // 1. Localhost/IP checking
+  const isLocalDev =
+    domainOnly === "localhost" ||
+    domainOnly === "127.0.0.1" ||
+    domainOnly === "0.0.0.0" ||
+    domainOnly.endsWith(".localhost");
+
+  if (isLocalDev) {
+    if (domainParts.length > 1 && domainParts[domainParts.length - 1] === "localhost") {
+      return domainParts.slice(0, -1).join(".");
+    }
+    return null;
+  }
+
+  // 2. Vercel Preview domain checking
+  if (domainOnly.endsWith(".vercel.app")) {
+    return null;
+  }
+
+  // 3. Standard domains (e.g. shop.craftbikelab.com)
+  if (domainParts.length >= 3) {
+    return domainParts.slice(0, -2).join(".");
+  }
+
+  return null;
+}
+
 export async function middleware(request: NextRequest) {
   const host = request.headers.get("host") ?? ""
   const requestHeaders = new Headers(request.headers)
-  const isLocalDev =
-    host.startsWith("localhost") ||
-    host.startsWith("127.0.0.1") ||
-    host.startsWith("0.0.0.0")
-  const isVercelPreview = host.endsWith(".vercel.app")
-  const rawSlug = host.split(".")[0]
+  const rawSlug = getShopSlugFromHost(host)
   const reserved = new Set(["booking", "booking-admin", "admin", "control", "www", "staging", "preview", "api"])
-  const tenantSlug = rawSlug.endsWith("-admin") ? rawSlug.slice(0, -6) : rawSlug
+  
+  const tenantSlug = rawSlug && rawSlug.endsWith("-admin") ? rawSlug.slice(0, -6) : rawSlug
 
-  if (!isLocalDev && !isVercelPreview && !reserved.has(rawSlug) && tenantSlug) {
+  if (rawSlug && !reserved.has(rawSlug) && tenantSlug) {
     requestHeaders.set("x-shop-slug", tenantSlug)
   }
 

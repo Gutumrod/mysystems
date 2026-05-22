@@ -52,8 +52,10 @@ supabase db reset
 ```env
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
-NEXT_PUBLIC_SHOP_ID=11111111-1111-1111-1111-111111111111
+NEXT_PUBLIC_SHOP_ID=
 ```
+
+`NEXT_PUBLIC_SHOP_ID` ใช้เป็น fallback สำหรับ local/base domain/preview เท่านั้น ใน production ของร้านจริงระบบอ่าน shop จาก subdomain slug ก่อน เช่น `kmorackbarcustom.craftbikelab.com`
 
 สร้าง `.env.local` ใน `apps/booking-admin`:
 
@@ -61,8 +63,10 @@ NEXT_PUBLIC_SHOP_ID=11111111-1111-1111-1111-111111111111
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
-NEXT_PUBLIC_SHOP_ID=11111111-1111-1111-1111-111111111111
+NEXT_PUBLIC_SHOP_ID=
 ```
+
+ฝั่ง admin ก็ใช้ fallback เฉพาะ local/base domain/preview เช่นกัน ส่วน `kmorackbarcustom-admin.craftbikelab.com` จะ resolve ร้านจาก slug `kmorackbarcustom`
 
 ## Run Locally
 
@@ -88,6 +92,6 @@ npm run dev:admin
 - Booking auto-confirm ทันที
 - Trigger ใน Postgres กันจองซ้ำและกันวันหยุด
 - Phase 1 ยังไม่มี LINE/Facebook API และ payment gateway
-- Phase ปัจจุบันใช้ `NEXT_PUBLIC_SHOP_ID` แบบต่อหนึ่ง deployment ต่อหนึ่งร้านอยู่ก่อน จนกว่าจะเปิดใช้ subdomain routing จริง
+- ระบบ production รองรับ multi-tenant subdomain routing แล้ว เช่น `[shop-slug].craftbikelab.com` และ `[shop-slug]-admin.craftbikelab.com`; `NEXT_PUBLIC_SHOP_ID` ยังเหลือไว้เป็น fallback สำหรับ base domain, preview และ local dev
 - `booking-admin` มี route **CraftBike Control Center** เริ่มต้นที่ `/platform` สำหรับคุมหลายร้าน และผูกโดเมนกลางที่ `control.craftbikelab.com`
 - มาตรฐานชื่อโดเมนและ flow สมัครร้านใหม่อธิบายไว้ใน [docs/DOMAIN_STANDARD.md](docs/DOMAIN_STANDARD.md)

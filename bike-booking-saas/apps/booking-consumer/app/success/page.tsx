@@ -1,17 +1,57 @@
 import Link from "next/link";
 import { headers } from "next/headers";
+import { unstable_cache } from "next/cache";
 import { format, parseISO } from "date-fns";
 import { CopyBookingButton } from "@/components/booking/CopyBookingButton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { demoBookings, demoServices, demoShop, hasSupabaseEnv } from "@/lib/mock-data";
 import { bookingCopy, formatBookingSchedule, getShopId } from "@/lib/utils";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createPublicSupabaseServerClient } from "@/lib/supabase/server";
 import type { BookingConfirmation, ServiceItem, Shop } from "@/lib/types";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export const dynamic = "force-dynamic";
+export const preferredRegion = "sin1";
+
+const SHOP_CACHE_SECONDS = 300;
+
+function getCachedShopBySlug(shopSlug: string) {
+  return unstable_cache(
+    async () => {
+      const supabase = createPublicSupabaseServerClient();
+      const { data } = await supabase.schema("bike_booking").from("shops").select("*").eq("slug", shopSlug).single<Shop>();
+      return data;
+    },
+    ["booking-consumer-success-shop-by-slug", shopSlug],
+    { revalidate: SHOP_CACHE_SECONDS, tags: [`booking-consumer-shop:${shopSlug}`] }
+  )();
+}
+
+function getCachedShopById(shopId: string) {
+  return unstable_cache(
+    async () => {
+      const supabase = createPublicSupabaseServerClient();
+      const { data } = await supabase.schema("bike_booking").from("shops").select("*").eq("id", shopId).single<Shop>();
+      return data;
+    },
+    ["booking-consumer-success-shop-by-id", shopId],
+    { revalidate: SHOP_CACHE_SECONDS, tags: [`booking-consumer-shop:${shopId}`] }
+  )();
+}
+
+function getCachedServices(shopId: string) {
+  return unstable_cache(
+    async () => {
+      const supabase = createPublicSupabaseServerClient();
+      const { data } = await supabase.schema("bike_booking").from("service_items").select("*").eq("shop_id", shopId).returns<ServiceItem[]>();
+      return data ?? [];
+    },
+    ["booking-consumer-success-services", shopId],
+    { revalidate: SHOP_CACHE_SECONDS, tags: [`booking-consumer-services:${shopId}`] }
+  )();
+}
 
 export default async function SuccessPage({ searchParams }: { searchParams: Promise<{ id?: string }> }) {
   const { id } = await searchParams;
@@ -23,13 +63,11 @@ export default async function SuccessPage({ searchParams }: { searchParams: Prom
     return <SuccessShell shop={demoShop} booking={booking} serviceNames={selectedNames} />;
   }
 
-  const supabase = await createSupabaseServerClient();
+  const supabase = createPublicSupabaseServerClient();
   const headersList = await headers();
   const shopSlug = headersList.get("x-shop-slug");
 
-  const { data: shop } = shopSlug
-    ? await supabase.schema("bike_booking").from("shops").select("*").eq("slug", shopSlug).single<Shop>()
-    : await supabase.schema("bike_booking").from("shops").select("*").eq("id", getShopId()).single<Shop>();
+  const shop = shopSlug ? await getCachedShopBySlug(shopSlug) : await getCachedShopById(getShopId());
 
   if (!shop) {
     return (
@@ -46,14 +84,14 @@ export default async function SuccessPage({ searchParams }: { searchParams: Prom
     );
   }
 
-  const [{ data: booking }, { data: services }] = await Promise.all([
+  const [{ data: booking }, services] = await Promise.all([
     safeId
       ? supabase
           .schema("bike_booking")
           .rpc("get_public_booking_confirmation", { target_booking_id: safeId, target_shop_id: shop.id })
           .single<BookingConfirmation>()
       : Promise.resolve({ data: null }),
-    supabase.schema("bike_booking").from("service_items").select("*").eq("shop_id", shop.id).returns<ServiceItem[]>()
+    getCachedServices(shop.id)
   ]);
 
   if (!shop || !booking) {
@@ -71,7 +109,7 @@ export default async function SuccessPage({ searchParams }: { searchParams: Prom
     );
   }
 
-  const selectedNames = (services ?? []).filter((service) => booking.service_items.includes(service.id)).map((service) => service.name);
+  const selectedNames = services.filter((service) => booking.service_items.includes(service.id)).map((service) => service.name);
   return <SuccessShell shop={shop} booking={booking} serviceNames={selectedNames} />;
 }
 

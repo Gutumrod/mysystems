@@ -1,6 +1,6 @@
 import { endOfMonth, endOfWeek, format, isWithinInterval, parse, startOfMonth, startOfWeek } from "date-fns";
 import { th } from "date-fns/locale";
-import type { Booking, BookingKind, BookingStatus, ServiceItem, Shop } from "./types";
+import type { Booking, BookingKind, BookingStatus, ServiceItem } from "./types";
 
 export function cn(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(" ");
@@ -32,77 +32,6 @@ export function getBangkokMonthRange(date = new Date()) {
 export function formatThaiDate(date: string | Date) {
   const parsed = typeof date === "string" ? parse(date, "yyyy-MM-dd", new Date()) : date;
   return format(parsed, "d MMM yyyy", { locale: th });
-}
-
-export function formatThaiDateTime(date: string | Date) {
-  const parsed = typeof date === "string" ? new Date(date) : date;
-  return new Intl.DateTimeFormat("th-TH", {
-    dateStyle: "medium",
-    timeStyle: "short",
-    timeZone: "Asia/Bangkok"
-  }).format(parsed);
-}
-
-export function platformActivityLabel(action: "status_change" | "billing_update" | "shop_deleted") {
-  return {
-    status_change: "เปลี่ยนสถานะ",
-    billing_update: "อัปเดตบิล",
-    shop_deleted: "ลบร้าน"
-  }[action];
-}
-
-export function billingEventLabel(type: "renewal" | "manual_update" | "payment_marked") {
-  return {
-    renewal: "ต่ออายุ",
-    manual_update: "ปรับบิล",
-    payment_marked: "บันทึกจ่ายแล้ว"
-  }[type];
-}
-
-export function getShopBillingHealth(shop: Pick<Shop, "billing_due_date" | "expires_at" | "billing_plan" | "subscription_status">, now = formatBangkokISODate()) {
-  if (!shop.billing_plan && !shop.billing_due_date && !shop.expires_at) {
-    return {
-      key: "unbilled",
-      label: "ยังไม่ตั้งบิล",
-      tone: "muted",
-      sortRank: 4
-    } as const;
-  }
-
-  if (shop.expires_at && shop.expires_at < now) {
-    return {
-      key: "expired",
-      label: "หมดอายุ",
-      tone: "destructive",
-      sortRank: 0
-    } as const;
-  }
-
-  if (shop.billing_due_date && shop.billing_due_date < now) {
-    return {
-      key: "overdue",
-      label: "ค้างชำระ",
-      tone: "warning",
-      sortRank: 1
-    } as const;
-  }
-
-  const dueSoonThreshold = getBangkokISODateOffset(7);
-  if (shop.billing_due_date && shop.billing_due_date >= now && shop.billing_due_date <= dueSoonThreshold) {
-    return {
-      key: "due_soon",
-      label: "ครบจ่ายใกล้ถึง",
-      tone: "warning",
-      sortRank: 2
-    } as const;
-  }
-
-  return {
-    key: "current",
-    label: shop.subscription_status === "active" ? "ปกติ" : "ยังใช้งานได้",
-    tone: "success",
-    sortRank: 3
-  } as const;
 }
 
 export function statusLabel(status: BookingStatus) {
@@ -147,18 +76,6 @@ export function isBookingActiveOnDate(booking: Booking, date: string) {
   }
 
   return booking.booking_date === date;
-}
-
-export function isBookingTerminalStatus(status: BookingStatus) {
-  return status === "completed" || status === "cancelled" || status === "no_show";
-}
-
-export function isBookingEditableOnDate(booking: Booking, date: string) {
-  if (isBookingTerminalStatus(booking.status)) {
-    return false;
-  }
-
-  return booking.booking_date >= date || isBookingActiveOnDate(booking, date);
 }
 
 export function bookingViewKindLabel(kind: BookingKind) {

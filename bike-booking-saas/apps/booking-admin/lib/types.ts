@@ -1,9 +1,6 @@
 export type WeekdayKey = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
 export type ServiceDurationUnit = "hour" | "day";
 export type BookingKind = "hourly" | "daily";
-export type PlatformActivityAction = "status_change" | "billing_update" | "shop_deleted";
-export type BillingEventType = "renewal" | "manual_update" | "payment_marked";
-export type SignupRequestStatus = "pending" | "approved" | "rejected";
 
 export type WorkingDay = {
   enabled: boolean;
@@ -25,54 +22,6 @@ export type Shop = {
   working_hours: WorkingHours;
   regular_holidays: WeekdayKey[];
   subscription_status: "trial" | "active" | "suspended" | "cancelled";
-  billing_plan?: string | null;
-  billing_due_date?: string | null;
-  expires_at?: string | null;
-  billing_note?: string | null;
-};
-
-export type PlatformActivityLog = {
-  id: string;
-  actor_user_id: string | null;
-  actor_email: string;
-  action: PlatformActivityAction;
-  target_shop_id: string | null;
-  target_shop_slug: string;
-  target_shop_name: string;
-  before_status: Shop["subscription_status"] | null;
-  after_status: Shop["subscription_status"] | null;
-  note: string | null;
-  created_at: string;
-};
-
-export type ShopBillingEvent = {
-  id: string;
-  shop_id: string;
-  actor_user_id: string | null;
-  actor_email: string;
-  event_type: BillingEventType;
-  billing_plan: string | null;
-  billing_due_date: string | null;
-  expires_at: string | null;
-  note: string | null;
-  created_at: string;
-};
-
-export type SignupRequest = {
-  id: string;
-  requested_email: string;
-  requested_shop_name: string;
-  requested_slug: string;
-  requested_phone: string | null;
-  requested_note: string | null;
-  auth_user_id: string | null;
-  status: SignupRequestStatus;
-  reviewed_by: string | null;
-  reviewed_note: string | null;
-  approved_shop_id: string | null;
-  created_at: string;
-  reviewed_at: string | null;
-  updated_at: string;
 };
 
 export type ServiceItem = {

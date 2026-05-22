@@ -57,8 +57,8 @@
 > ถ้า “ไม่มีบริการให้เลือก” ให้เช็กทันที:
 > - ใน `bike_booking.service_items` มี row ของร้านนี้หรือไม่
 > - `is_active = true` หรือไม่
-> - `shop_id` ตรงกับร้านที่ deploy อยู่หรือไม่
-> - service ถูกผูกกับ `NEXT_PUBLIC_SHOP_ID` ตัวเดียวกับหน้าเว็บหรือไม่
+> - `shop_id` ตรงกับร้านที่ resolve จาก subdomain slug หรือ fallback `NEXT_PUBLIC_SHOP_ID` หรือไม่
+> - service ถูกผูกกับ shop row เดียวกับหน้าเว็บหรือไม่
 > - policy public read ของ `service_items` ยังอ่าน active rows ได้หรือไม่
 
 ### 2.4 ข้อมูลตั้งต้นในฐานข้อมูล
@@ -224,7 +224,7 @@
 1. เช็ก `bike_booking.service_items`
 2. เช็ก `shop_id` ของ service ว่าตรงร้านที่ deploy
 3. เช็ก `is_active = true`
-4. เช็กว่าร้านใน production ใช้ `NEXT_PUBLIC_SHOP_ID` ตัวไหน
+4. เช็กว่าร้านใน production resolve จาก subdomain slug หรือ fallback `NEXT_PUBLIC_SHOP_ID`
 5. เช็กว่า shop row และ service row อยู่ร้านเดียวกันจริง
 6. เช็กว่ามีข้อมูล seed/test เก่าปนกับ production หรือไม่
 

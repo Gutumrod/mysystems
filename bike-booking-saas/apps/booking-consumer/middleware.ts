@@ -28,25 +28,44 @@ const RESERVED_SLUGS = new Set([
   "api",
 ]);
 
+export function getShopSlugFromHost(host: string): string | null {
+  const parts = host.split(":");
+  const domainOnly = parts[0];
+  const domainParts = domainOnly.split(".");
+
+  // 1. Localhost/IP checking
+  const isLocalDev =
+    domainOnly === "localhost" ||
+    domainOnly === "127.0.0.1" ||
+    domainOnly === "0.0.0.0" ||
+    domainOnly.endsWith(".localhost");
+
+  if (isLocalDev) {
+    if (domainParts.length > 1 && domainParts[domainParts.length - 1] === "localhost") {
+      return domainParts.slice(0, -1).join(".");
+    }
+    return null;
+  }
+
+  // 2. Vercel Preview domain checking
+  if (domainOnly.endsWith(".vercel.app")) {
+    return null;
+  }
+
+  // 3. Standard domains (e.g. shop.craftbikelab.com)
+  if (domainParts.length >= 3) {
+    return domainParts.slice(0, -2).join(".");
+  }
+
+  return null;
+}
+
 export function middleware(request: NextRequest) {
   const host = request.headers.get("host") ?? "";
+  const rawSlug = getShopSlugFromHost(host);
 
-  // Detect local development environment
-  const isLocalDev =
-    host.startsWith("localhost") ||
-    host.startsWith("127.0.0.1") ||
-    host.startsWith("0.0.0.0");
-
-  // Vercel preview URLs (*.vercel.app) have no tenant subdomain
-  const isVercelPreview = host.endsWith(".vercel.app");
-
-  const rawSlug = host.split(".")[0];
-
-  // Extract slug only when it represents a real tenant
-  const slug =
-    isLocalDev || isVercelPreview || RESERVED_SLUGS.has(rawSlug)
-      ? null
-      : rawSlug;
+  // Extract slug only when it represents a real tenant and is not reserved
+  const slug = rawSlug && !RESERVED_SLUGS.has(rawSlug) ? rawSlug : null;
 
   const requestHeaders = new Headers(request.headers);
 

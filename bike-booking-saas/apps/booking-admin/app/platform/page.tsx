@@ -1,11 +1,10 @@
 import { redirect } from "next/navigation";
-import { AlertTriangle, BarChart3, Building2, Clock3, Shield, Store } from "lucide-react";
+import { BarChart3, Building2, Shield, Store } from "lucide-react";
 import { PlatformAdminConsole, type PlatformShop } from "@/components/platform/PlatformAdminConsole";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { hasSupabaseEnv } from "@/lib/mock-data";
-import type { Booking, PlatformActivityLog, ServiceItem, ShopBillingEvent, SignupRequest } from "@/lib/types";
-import { formatBangkokISODate, formatThaiDate, getBangkokISODateOffset, getShopBillingHealth } from "@/lib/utils";
+import type { Booking, ServiceItem } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -51,14 +50,7 @@ export default async function PlatformPage() {
     .returns<PlatformShop[]>();
 
   const shopRows = shops ?? [];
-  const today = formatBangkokISODate();
-  const dueSoonThreshold = getBangkokISODateOffset(7);
-  const billingSortedShops = [...shopRows].sort((a, b) => {
-    const aHealth = getShopBillingHealth(a, today);
-    const bHealth = getShopBillingHealth(b, today);
-    return aHealth.sortRank - bHealth.sortRank || a.name.localeCompare(b.name, "th");
-  });
-  const [{ data: bookings }, { data: services }, { data: activityLogs }, { data: billingEvents }, { data: signupRequests }] = await Promise.all([
+  const [{ data: bookings }, { data: services }] = await Promise.all([
     supabase
       .schema("bike_booking")
       .from("bookings")
@@ -72,42 +64,13 @@ export default async function PlatformPage() {
       .from("service_items")
       .select("*")
       .order("sort_order")
-      .returns<ServiceItem[]>(),
-    supabase
-      .schema("bike_booking")
-      .from("platform_activity_logs")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(20)
-      .returns<PlatformActivityLog[]>(),
-    supabase
-      .schema("bike_booking")
-      .from("shop_billing_events")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(20)
-      .returns<ShopBillingEvent[]>(),
-    supabase
-      .schema("bike_booking")
-      .from("signup_requests")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(50)
-      .returns<SignupRequest[]>()
+      .returns<ServiceItem[]>()
   ]);
   const bookingRows = bookings ?? [];
-  const activityRows = activityLogs ?? [];
-  const billingRows = billingEvents ?? [];
-  const signupRows = signupRequests ?? [];
   const totalShops = shopRows.length;
   const activeShops = shopRows.filter((shop) => shop.subscription_status === "active").length;
   const suspendedShops = shopRows.filter((shop) => shop.subscription_status === "suspended").length;
-  const dueSoonShops = shopRows.filter((shop) => Boolean(shop.billing_due_date && shop.billing_due_date >= today && shop.billing_due_date <= dueSoonThreshold)).length;
-  const overdueShops = shopRows.filter((shop) => Boolean(shop.billing_due_date && shop.billing_due_date < today)).length;
-  const expiredShops = shopRows.filter((shop) => Boolean(shop.expires_at && shop.expires_at < today)).length;
-  const unbilledShops = shopRows.filter((shop) => !shop.billing_plan && !shop.billing_due_date && !shop.expires_at).length;
   const totalBookings = bookingRows.length;
-  const pendingSignupRequests = signupRows.filter((request) => request.status === "pending").length;
 
   const bookingCountByShop = new Map<string, number>();
   for (const booking of bookingRows) {
@@ -134,70 +97,41 @@ export default async function PlatformPage() {
         <Stat title="การจองทั้งหมด" value={totalBookings} icon={BarChart3} />
       </section>
 
-      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-        <Stat title="ครบจ่ายใน 7 วัน" value={dueSoonShops} icon={Clock3} />
-        <Stat title="ค้างชำระ" value={overdueShops} icon={AlertTriangle} />
-        <Stat title="หมดอายุแล้ว" value={expiredShops} icon={AlertTriangle} />
-        <Stat title="ยังไม่ตั้งบิล" value={unbilledShops} icon={Clock3} />
-        <Stat title="รออนุมัติ" value={pendingSignupRequests} icon={Store} />
-      </section>
-
       <Card>
         <CardHeader>
           <CardTitle>รายการร้าน</CardTitle>
         </CardHeader>
         <CardContent className="overflow-x-auto">
-          <table className="w-full min-w-[980px] border-collapse text-sm">
+          <table className="w-full min-w-[720px] border-collapse text-sm">
             <thead>
               <tr className="border-b text-left text-muted-foreground">
                 <th className="py-3 pr-4 font-medium">ชื่อร้าน</th>
                 <th className="py-3 pr-4 font-medium">Slug</th>
                 <th className="py-3 pr-4 font-medium">สถานะ</th>
-                <th className="py-3 pr-4 font-medium">แพ็กเกจ</th>
-                <th className="py-3 pr-4 font-medium">ครบจ่าย</th>
-                <th className="py-3 pr-4 font-medium">หมดอายุ</th>
                 <th className="py-3 pr-4 font-medium">เบอร์</th>
                 <th className="py-3 pr-4 font-medium">คิวทั้งหมด</th>
               </tr>
             </thead>
             <tbody>
-              {billingSortedShops.map((shop) => {
-                const billingHealth = getShopBillingHealth(shop, today);
-                return (
-                  <tr key={shop.id} className="border-b last:border-b-0">
-                    <td className="py-4 pr-4 font-medium">{shop.name}</td>
-                    <td className="py-4 pr-4 text-muted-foreground">{shop.slug}</td>
-                    <td className="py-4 pr-4">
-                      <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium capitalize">
-                        {shop.subscription_status}
-                      </span>
-                    </td>
-                    <td className="py-4 pr-4">
-                      <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium">{billingHealth.label}</span>
-                    </td>
-                    <td className="py-4 pr-4 text-muted-foreground">{shop.billing_plan ?? "-"}</td>
-                    <td className="py-4 pr-4 text-muted-foreground">{shop.billing_due_date ? formatThaiDate(shop.billing_due_date) : "-"}</td>
-                    <td className="py-4 pr-4 text-muted-foreground">{shop.expires_at ? formatThaiDate(shop.expires_at) : "-"}</td>
-                    <td className="py-4 pr-4 text-muted-foreground">{shop.phone ?? "-"}</td>
-                    <td className="py-4 pr-4 text-muted-foreground">{bookingCountByShop.get(shop.id) ?? 0}</td>
-                  </tr>
-                );
-              })}
+              {shopRows.map((shop) => (
+                <tr key={shop.id} className="border-b last:border-b-0">
+                  <td className="py-4 pr-4 font-medium">{shop.name}</td>
+                  <td className="py-4 pr-4 text-muted-foreground">{shop.slug}</td>
+                  <td className="py-4 pr-4">
+                    <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium capitalize">
+                      {shop.subscription_status}
+                    </span>
+                  </td>
+                  <td className="py-4 pr-4 text-muted-foreground">{shop.phone ?? "-"}</td>
+                  <td className="py-4 pr-4 text-muted-foreground">{bookingCountByShop.get(shop.id) ?? 0}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </CardContent>
       </Card>
 
-      <PlatformAdminConsole
-        shops={billingSortedShops}
-        initialBookings={bookingRows}
-        services={services ?? []}
-        activityLogs={activityRows}
-        billingEvents={billingRows}
-        signupRequests={signupRows}
-        actorEmail={user.email ?? user.id}
-        actorUserId={user.id}
-      />
+      <PlatformAdminConsole shops={shopRows} initialBookings={bookingRows} services={services ?? []} />
     </main>
   );
 }
