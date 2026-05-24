@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import type { PortalMode } from "@/lib/portal";
 import { getPortalSignupCopy } from "@/lib/portal";
 import { getSignupPreviewUrls, normalizeSignupSlug } from "@/lib/signup";
@@ -63,6 +64,11 @@ export function PortalSignupForm({ mode }: Props) {
 
     if (state.password !== state.confirmPassword) {
       toast.error("รหัสผ่านไม่ตรงกัน");
+      return;
+    }
+
+    if (state.password.length < 8) {
+      toast.error("พาสเวิร์ดต้องมีอย่างน้อย 8 ตัวอักษร");
       return;
     }
 
@@ -202,7 +208,7 @@ export function PortalSignupForm({ mode }: Props) {
                     id="email"
                     type="email"
                     autoComplete="email"
-                    placeholder="owner@yourshop.com"
+                    placeholder="owner@example.com"
                     value={state.email}
                     onChange={(event) => setState((current) => ({ ...current, email: event.target.value }))}
                     required
@@ -214,7 +220,8 @@ export function PortalSignupForm({ mode }: Props) {
                   <FieldLabel htmlFor="shopName">ชื่อร้าน</FieldLabel>
                   <Input
                     id="shopName"
-                    placeholder="KMO RACK BAR CUSTOM"
+                    autoComplete="organization"
+                    placeholder="เช่น KMO RACK BAR CUSTOM"
                     value={state.shopName}
                     onChange={(event) => setState((current) => ({ ...current, shopName: event.target.value }))}
                     required
@@ -226,7 +233,7 @@ export function PortalSignupForm({ mode }: Props) {
                   <FieldLabel htmlFor="slug">Slug</FieldLabel>
                   <Input
                     id="slug"
-                    placeholder="kmorackbarcustom"
+                    placeholder="เช่น kmorackbarcustom"
                     value={state.slug}
                     onChange={(event) => {
                       setSlugTouched(true);
@@ -235,21 +242,8 @@ export function PortalSignupForm({ mode }: Props) {
                     required
                   />
                   <p className="text-xs text-muted-foreground">
-                    slug คือชื่อเว็บร้าน เช่น <span className="font-medium text-foreground">kmorackbarcustom</span> จะได้ลิงก์
-                    <span className="mx-1 font-medium text-foreground">{preview.customer}</span>
+                    slug คือชื่อเว็บร้าน ใช้ได้เฉพาะ a-z, 0-9 และขีดกลาง เช่น <span className="font-medium text-foreground">kmorackbarcustom</span>
                   </p>
-                </Field>
-
-                <Field>
-                  <FieldLabel htmlFor="phone">เบอร์โทร (ไม่บังคับ)</FieldLabel>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    autoComplete="tel"
-                    placeholder="0812345678"
-                    value={state.phone}
-                    onChange={(event) => setState((current) => ({ ...current, phone: event.target.value }))}
-                  />
                 </Field>
 
                 <div className="grid gap-3 md:grid-cols-2">
@@ -263,6 +257,7 @@ export function PortalSignupForm({ mode }: Props) {
                       value={state.password}
                       onChange={(event) => setState((current) => ({ ...current, password: event.target.value }))}
                       required
+                      minLength={8}
                     />
                   </Field>
 
@@ -276,15 +271,27 @@ export function PortalSignupForm({ mode }: Props) {
                       value={state.confirmPassword}
                       onChange={(event) => setState((current) => ({ ...current, confirmPassword: event.target.value }))}
                       required
+                      minLength={8}
                     />
                   </Field>
                 </div>
 
                 <Field>
+                  <FieldLabel htmlFor="phone">เบอร์โทร (ไม่บังคับ)</FieldLabel>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    autoComplete="tel"
+                    placeholder="เช่น 0812345678"
+                    value={state.phone}
+                    onChange={(event) => setState((current) => ({ ...current, phone: event.target.value }))}
+                  />
+                </Field>
+
+                <Field>
                   <FieldLabel htmlFor="note">หมายเหตุ (ไม่บังคับ)</FieldLabel>
-                  <textarea
+                  <Textarea
                     id="note"
-                    className="min-h-24 rounded-md border border-border bg-background px-3 py-2 text-sm outline-none"
                     placeholder="เช่น ต้องการเริ่มใช้งานเดือนหน้า / ใช้เบอร์นี้ติดต่อ"
                     value={state.note}
                     onChange={(event) => setState((current) => ({ ...current, note: event.target.value }))}
@@ -303,7 +310,7 @@ export function PortalSignupForm({ mode }: Props) {
                 </div>
 
                 <p className="text-xs text-muted-foreground">
-                  เจ้าของระบบจะตรวจคำขอและอนุมัติให้ร้านใช้งานต่อ หลังจากนั้นเจ้าของร้านจะใช้เมลและรหัสผ่านนี้ล็อกอินได้
+                  ระบบจะส่งคำขอเข้า Control Center ก่อน ยังไม่สร้างร้านทันที เจ้าของระบบจะตรวจและอนุมัติให้ร้านใช้งานต่อ หลังจากนั้นเจ้าของร้านจะใช้เมลและพาสเวิร์ดนี้ล็อกอินได้
                 </p>
 
                 <Button type="submit" disabled={state.loading}>
