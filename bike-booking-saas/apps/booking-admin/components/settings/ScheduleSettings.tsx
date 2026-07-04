@@ -61,6 +61,16 @@ export function ScheduleSettings({ shop, initialHolidays, demoMode = false }: { 
     if (isSavingHours) return;
     setIsSavingHours(true);
     const nextHours = normalizeWorkingHours(hours);
+
+    const invalidDay = days.find(
+      (day) => nextHours[day.key].enabled && nextHours[day.key].start >= nextHours[day.key].end
+    );
+    if (invalidDay) {
+      setIsSavingHours(false);
+      toast.error(`${invalidDay.label}: เวลาเปิดต้องน้อยกว่าเวลาปิด`);
+      return;
+    }
+
     const regular_holidays = days.filter((day) => !nextHours[day.key].enabled).map((day) => day.key);
     if (!supabase) {
       setHours(nextHours);
