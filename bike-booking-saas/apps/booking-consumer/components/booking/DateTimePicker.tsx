@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import type { BookingKind, BookingSlot, Shop, ShopHoliday } from "@/lib/types";
+import { addDays } from "date-fns";
 import { buildTimeSlots, cn, formatBangkokISODate, getBookingDateAvailability, formatThaiDate, parseBangkokDateTime } from "@/lib/utils";
 
 type Props = {
@@ -69,6 +70,7 @@ export function DateTimePicker({
           id="booking_date"
           type="date"
           min={formatBangkokISODate(new Date())}
+          max={formatBangkokISODate(addDays(new Date(), 45))}
           value={date}
           onChange={(event) => {
             onDateChange(event.target.value);
@@ -119,6 +121,7 @@ export function DateTimePicker({
             id="booking_end_date"
             type="date"
             min={minimumEndDate || date || formatBangkokISODate(new Date())}
+            max={formatBangkokISODate(addDays(new Date(), 45))}
             value={endDate}
             onChange={(event) => onEndDateChange(event.target.value)}
             aria-invalid={Boolean(endDateError)}
