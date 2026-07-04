@@ -181,9 +181,10 @@ export function BookingForm({ shop, services, holidays, bookings, demoMode = fal
 
     if (error) {
       const msg = error.message;
-      const isConflict = msg.includes("เวลานี้") || msg.includes("จองแล้ว") || msg.includes("overlap");
+      const isConflict = error.code === "BK409";
       if (isConflict) {
-        setError("booking_time_start", { message: "เวลานี้มีคนจองแล้ว กรุณาเลือกเวลาใหม่" });
+        const conflictField = bookingKind === "daily" ? "booking_end_date" : "booking_time_start";
+        setError(conflictField, { message: bookingKind === "daily" ? "ช่วงวันนี้คิวเต็มแล้ว กรุณาเลือกวันใหม่" : "เวลานี้มีคนจองแล้ว กรุณาเลือกเวลาใหม่" });
         dateTimeRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
       } else {
         toast.error(msg.includes("ติดต่อร้านโดยตรง") ? "ติดต่อร้านโดยตรง" : `จองไม่สำเร็จ: ${msg}`);
