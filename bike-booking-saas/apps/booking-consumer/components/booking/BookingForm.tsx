@@ -184,9 +184,8 @@ export function BookingForm({ shop, services, holidays, bookings, demoMode = fal
         p_booking_time_end:   isDailyBooking ? null : endTime,
         p_additional_notes:   values.additional_notes || null,
       });
-    setSubmitting(false);
-
     if (error) {
+      setSubmitting(false);
       const msg = error.message;
       const isConflict = error.code === "BK409";
       if (isConflict) {
