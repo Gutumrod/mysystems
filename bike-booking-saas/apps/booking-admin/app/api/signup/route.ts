@@ -1,32 +1,75 @@
 import { NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { normalizeSignupSlug, signupRequestSchema } from "@/lib/signup";
+import { getPortalModeFromHost } from "@/lib/portal";
 
-async function findExistingAuthUserIdByEmail(email: string) {
-  const supabase = createSupabaseAdminClient();
+// ── In-memory rate limiter ──────────────────────────────────────────
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT_WINDOW_MS = 60_000; // 1 minute
+const RATE_LIMIT_MAX = 5;            // 5 requests per window per IP
 
-  for (let page = 1; page <= 10; page += 1) {
-    const { data, error } = await supabase.auth.admin.listUsers({ page, perPage: 100 });
+function checkRateLimit(ip: string): { allowed: boolean; retryAfterMs: number } {
+  const now = Date.now();
+  const entry = rateLimitMap.get(ip);
 
-    if (error) {
-      throw error;
-    }
-
-    const match = data.users.find((user) => user.email?.toLowerCase() === email.toLowerCase());
-    if (match) {
-      return match.id;
-    }
-
-    if (data.users.length < 100) {
-      break;
-    }
+  if (!entry || now >= entry.resetAt) {
+    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return { allowed: true, retryAfterMs: 0 };
   }
 
-  return null;
+  if (entry.count >= RATE_LIMIT_MAX) {
+    return { allowed: false, retryAfterMs: entry.resetAt - now };
+  }
+
+  entry.count += 1;
+  return { allowed: true, retryAfterMs: 0 };
 }
 
+// Cleanup stale entries every 5 minutes (best-effort, no setInterval in serverless)
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, val] of rateLimitMap) {
+    if (now >= val.resetAt) rateLimitMap.delete(key);
+  }
+}, 300_000).unref();
+
+// ── Route ───────────────────────────────────────────────────────────
 export async function POST(request: Request) {
   try {
+    // ── Host check: only allow signup from control host ──────────────
+    const host = request.headers.get("host");
+    const mode = getPortalModeFromHost(host);
+    if (mode !== "control") {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "forbidden",
+          message: "การสมัครร้านใหม่ต้องทำผ่าน control.craftbikelab.com/signup เท่านั้น"
+        },
+        { status: 403 }
+      );
+    }
+
+    // ── Rate limit ────────────────────────────────────────────────────
+    const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+      || request.headers.get("x-real-ip")
+      || "unknown";
+    const { allowed, retryAfterMs } = checkRateLimit(ip);
+    if (!allowed) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "rate_limited",
+          message: "ส่งคำขอถี่เกินไป กรุณารอสักครู่แล้วลองใหม่"
+        },
+        {
+          status: 429,
+          headers: { "Retry-After": String(Math.ceil(retryAfterMs / 1000)) }
+        }
+      );
+    }
+
+    // ── Parse & validate ─────────────────────────────────────────────
     const payload = await request.json().catch(() => null);
     const parsed = signupRequestSchema.safeParse(payload);
 
@@ -90,40 +133,19 @@ export async function POST(request: Request) {
       }
     });
 
-    let authUserId = createdUser?.user?.id ?? null;
+    const authUserId = createdUser?.user?.id ?? null;
     const createdFreshUser = Boolean(authUserId);
 
     if (createUserError || !authUserId) {
-      const existingAuthUserId = await findExistingAuthUserIdByEmail(input.email.trim());
-
-      if (!existingAuthUserId) {
-        return NextResponse.json(
-          {
-            ok: false,
-            error: "auth_create_failed",
-            message: createUserError?.message || "สร้างบัญชีไม่สำเร็จ"
-          },
-          { status: 400 }
-        );
-      }
-
-      const { error: updateUserError } = await supabase.auth.admin.updateUserById(existingAuthUserId, {
-        password: input.password,
-        email_confirm: true
-      });
-
-      if (updateUserError) {
-        return NextResponse.json(
-          {
-            ok: false,
-            error: "auth_update_failed",
-            message: updateUserError.message || "อัปเดตรหัสผ่านไม่สำเร็จ"
-          },
-          { status: 400 }
-        );
-      }
-
-      authUserId = existingAuthUserId;
+      // Return generic error — never leak whether email exists or reset existing user's password
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "email_unavailable",
+          message: "อีเมลนี้มีบัญชีอยู่แล้วในระบบ กรุณาเข้าระบบหรือใช้ลืมรหัสผ่าน"
+        },
+        { status: 409 }
+      );
     }
 
     const { error: insertRequestError, data: requestRow } = await supabase

@@ -26,9 +26,26 @@ export default async function Page() {
   const shopSlug = headersList.get("x-shop-slug");
 
   // Step 1: Fetch the shop record (slug → production, UUID → local dev)
-  const { data: shop } = shopSlug
+  const { data: shop, error: shopError } = shopSlug
     ? await supabase.schema("bike_booking").from("shops").select("*").eq("slug", shopSlug).single<Shop>()
     : await supabase.schema("bike_booking").from("shops").select("*").eq("id", getShopId()).single<Shop>();
+
+  // PGRST116 = .single() found 0 rows (normal "not found", not a real error)
+  if (shopError && shopError.code !== "PGRST116") {
+    return (
+      <main className="mx-auto flex min-h-screen max-w-2xl items-center px-4">
+        <Card>
+          <CardContent className="flex items-start gap-3 p-5">
+            <AlertCircle className="mt-1 text-[#ff7350]" />
+            <div>
+              <h1 className="text-lg font-semibold">ระบบขัดข้อง</h1>
+              <p className="text-sm text-muted-foreground">ไม่สามารถเชื่อมต่อฐานข้อมูลได้ กรุณาลองใหม่อีกครั้ง</p>
+            </div>
+          </CardContent>
+        </Card>
+      </main>
+    );
+  }
 
   if (!shop) {
     return (
@@ -47,7 +64,7 @@ export default async function Page() {
   }
 
   // Step 2: Fetch services, holidays, and bookings in parallel using shop.id
-  const [{ data: services }, { data: holidays }, { data: bookings }] = await Promise.all([
+  const [servicesResult, holidaysResult, bookingsResult] = await Promise.all([
     supabase.schema("bike_booking").from("service_items").select("*").eq("shop_id", shop.id).eq("is_active", true).order("sort_order").returns<ServiceItem[]>(),
     supabase.schema("bike_booking").from("shop_holidays").select("*").eq("shop_id", shop.id).gte("holiday_date", today).returns<ShopHoliday[]>(),
     supabase
@@ -59,6 +76,27 @@ export default async function Page() {
       .lte("booking_date", limit)
       .returns<BookingSlot[]>()
   ]);
+
+  // Fail-safe: ถ้า query ใด fail → แสดง error แทนฟอร์ม (ปลอดภัยไว้ก่อน)
+  if (servicesResult.error || holidaysResult.error || bookingsResult.error) {
+    return (
+      <main className="mx-auto flex min-h-screen max-w-2xl items-center px-4">
+        <Card>
+          <CardContent className="flex items-start gap-3 p-5">
+            <AlertCircle className="mt-1 text-[#ff7350]" />
+            <div>
+              <h1 className="text-lg font-semibold">ระบบขัดข้อง</h1>
+              <p className="text-sm text-muted-foreground">ไม่สามารถโหลดข้อมูลการจองได้ กรุณาลองใหม่อีกครั้ง</p>
+            </div>
+          </CardContent>
+        </Card>
+      </main>
+    );
+  }
+
+  const services = servicesResult.data;
+  const holidays = holidaysResult.data;
+  const bookings = bookingsResult.data;
 
   return <BookingShell shop={shop} services={services ?? []} holidays={holidays ?? []} bookings={bookings ?? []} />;
 }

@@ -27,9 +27,26 @@ export default async function SuccessPage({ searchParams }: { searchParams: Prom
   const headersList = await headers();
   const shopSlug = headersList.get("x-shop-slug");
 
-  const { data: shop } = shopSlug
+  const { data: shop, error: shopError } = shopSlug
     ? await supabase.schema("bike_booking").from("shops").select("*").eq("slug", shopSlug).single<Shop>()
     : await supabase.schema("bike_booking").from("shops").select("*").eq("id", getShopId()).single<Shop>();
+
+  // PGRST116 = .single() found 0 rows (normal "not found", not a real error)
+  if (shopError && shopError.code !== "PGRST116") {
+    return (
+      <main className="mx-auto flex min-h-screen max-w-xl items-center px-4">
+        <Card>
+          <CardContent className="p-5">
+            <h1 className="text-lg font-semibold">ระบบขัดข้อง</h1>
+            <p className="text-sm text-muted-foreground">ไม่สามารถเชื่อมต่อฐานข้อมูลได้ กรุณาลองใหม่อีกครั้ง</p>
+            <Link href="/">
+              <Button className="mt-4">กลับไปจองใหม่</Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </main>
+    );
+  }
 
   if (!shop) {
     return (
@@ -46,17 +63,38 @@ export default async function SuccessPage({ searchParams }: { searchParams: Prom
     );
   }
 
-  const [{ data: booking }, { data: services }] = await Promise.all([
+  const [bookingResult, servicesResult] = await Promise.all([
     safeId
       ? supabase
           .schema("bike_booking")
           .rpc("get_public_booking_confirmation", { target_booking_id: safeId, target_shop_id: shop.id })
           .single<BookingConfirmation>()
-      : Promise.resolve({ data: null }),
+      : Promise.resolve({ data: null, error: null }),
     supabase.schema("bike_booking").from("service_items").select("*").eq("shop_id", shop.id).returns<ServiceItem[]>()
   ]);
 
-  if (!shop || !booking) {
+  // PGRST116 = .single() found 0 rows (normal "not found"), let it fall through to !booking check
+  const isBookingNotFound = bookingResult.error?.code === "PGRST116";
+  if ((bookingResult.error && !isBookingNotFound) || servicesResult.error) {
+    return (
+      <main className="mx-auto flex min-h-screen max-w-xl items-center px-4">
+        <Card>
+          <CardContent className="p-5">
+            <h1 className="text-lg font-semibold">ระบบขัดข้อง</h1>
+            <p className="text-sm text-muted-foreground">ไม่สามารถโหลดข้อมูลการจองได้ กรุณาลองใหม่อีกครั้ง</p>
+            <Link href="/">
+              <Button className="mt-4">กลับไปจองใหม่</Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </main>
+    );
+  }
+
+  const booking = bookingResult.data;
+  const services = servicesResult.data;
+
+  if (!booking) {
     return (
       <main className="mx-auto flex min-h-screen max-w-xl items-center px-4">
         <Card>

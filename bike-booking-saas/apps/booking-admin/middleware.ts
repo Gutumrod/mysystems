@@ -51,7 +51,7 @@ export async function middleware(request: NextRequest) {
 
   const isAuthRoute = request.nextUrl.pathname.startsWith('/login')
   const isPlatformRoute = request.nextUrl.pathname.startsWith('/platform')
-  const shopAdminRoutes = ['/dashboard', '/bookings', '/calendar', '/services', '/settings']
+  const shopAdminRoutes = ['/dashboard', '/bookings', '/calendar', '/services', '/settings', '/today']
   const isShopAdminRoute = request.nextUrl.pathname === '/' || shopAdminRoutes.some((prefix) => request.nextUrl.pathname.startsWith(prefix))
 
   let isPlatformAdmin = false
