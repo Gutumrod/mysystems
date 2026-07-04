@@ -61,13 +61,15 @@ export function DashboardClient({ initialBookings, services, shopId, demoMode = 
   async function updateStatus(id: string, status: BookingStatus) {
     if (savingId) return;
     setSavingId(id);
+    const current = bookings.find((item) => item.id === id);
+    const customerShowedUp = status === "completed" ? true : (current?.customer_showed_up ?? null);
     if (!supabase) {
-      setBookings((items) => items.map((item) => (item.id === id ? { ...item, status, customer_showed_up: status === "completed" ? true : null } : item)));
+      setBookings((items) => items.map((item) => (item.id === id ? { ...item, status, customer_showed_up: customerShowedUp } : item)));
       setSavingId(null);
       toast.success("อัปเดตสถานะแล้ว (โหมดตัวอย่าง)");
       return;
     }
-    const { error } = await supabase.schema("bike_booking").from("bookings").update({ status, customer_showed_up: status === "completed" ? true : null }).eq("id", id);
+    const { error } = await supabase.schema("bike_booking").from("bookings").update({ status, customer_showed_up: customerShowedUp }).eq("id", id);
     setSavingId(null);
     if (error) {
       toast.error(error.message);

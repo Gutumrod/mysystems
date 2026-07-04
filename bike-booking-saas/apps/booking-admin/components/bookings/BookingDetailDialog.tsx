@@ -102,10 +102,35 @@ export function BookingDetailDialog({ booking, services, open, onOpenChange, onU
       return;
     }
 
+    if (nextStatus === "no_show") {
+      const { error: rpcError } = await supabase.schema("bike_booking").rpc("mark_booking_no_show", { target_booking_id: booking.id });
+      if (rpcError) {
+        setIsSaving(false);
+        toast.error(rpcError.message);
+        return;
+      }
+      const { data, error } = await supabase
+        .schema("bike_booking")
+        .from("bookings")
+        .select("*")
+        .eq("id", booking.id)
+        .single<Booking>();
+      setIsSaving(false);
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+      onUpdated(data);
+      toast.success("อัปเดตสถานะแล้ว");
+      return;
+    }
+
+    const customerShowedUp = nextStatus === "completed" ? true : booking.customer_showed_up;
+
     const { data, error } = await supabase
       .schema("bike_booking")
       .from("bookings")
-      .update({ status: nextStatus, customer_showed_up: nextStatus === "completed" ? true : nextStatus === "no_show" ? false : null })
+      .update({ status: nextStatus, customer_showed_up: customerShowedUp })
       .eq("id", booking.id)
       .select("*")
       .single<Booking>();
