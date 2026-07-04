@@ -160,6 +160,46 @@ export function calculateMinimumDailyEndDate(startDate: string, requiredDays: nu
   return formatBangkokISODate(lastOpenDate);
 }
 
+export function getDailyBookingAvailability(
+  shop: Shop,
+  holidays: ShopHoliday[],
+  bookings: BookingSlot[],
+  startDate: string,
+  endDate: string
+): { available: boolean; blockedDate: string | null } {
+  if (!startDate || !endDate) return { available: true, blockedDate: null };
+
+  let cursor = parseBangkokDateTime(startDate);
+  const end = parseBangkokDateTime(endDate);
+  let guard = 0;
+
+  while (cursor <= end && guard < 370) {
+    const iso = formatBangkokISODate(cursor);
+
+    if (!isClosedDate(shop, holidays, cursor)) {
+      const dayKey = toWeekdayKey(cursor);
+      const dailyLimit = shop.working_hours[dayKey]?.daily_limit ?? 0;
+
+      if (dailyLimit > 0) {
+        const overlapping = bookings.filter((booking) => {
+          if (booking.booking_kind !== "daily" || !isSlotWorkloadStatus(booking.status)) return false;
+          const bookingEnd = booking.booking_end_date ?? booking.booking_date;
+          return booking.booking_date <= iso && bookingEnd >= iso;
+        }).length;
+
+        if (overlapping >= dailyLimit) {
+          return { available: false, blockedDate: iso };
+        }
+      }
+    }
+
+    cursor = new Date(cursor.getTime() + 24 * 60 * 60 * 1000);
+    guard += 1;
+  }
+
+  return { available: true, blockedDate: null };
+}
+
 function normalizedCapacity(value: number | undefined, fallback: number, minimum: number) {
   const parsed = Number(value ?? fallback);
   if (!Number.isFinite(parsed)) return fallback;

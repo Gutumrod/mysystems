@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { BookingSlot, ServiceItem, Shop, ShopHoliday } from "@/lib/types";
 import { bookingSchema, type BookingFormValues } from "@/lib/validations";
-import { calculateEndTime, calculateMinimumDailyEndDate, cn, getBookingDateAvailability, parseBangkokDateTime, resolveSelectedBookingMode } from "@/lib/utils";
+import { calculateEndTime, calculateMinimumDailyEndDate, cn, getBookingDateAvailability, getDailyBookingAvailability, parseBangkokDateTime, resolveSelectedBookingMode } from "@/lib/utils";
 import { createBrowserClient } from "@/lib/supabase/client";
 import { BikeModelAutocomplete } from "./BikeModelAutocomplete";
 import { DateTimePicker } from "./DateTimePicker";
@@ -81,6 +81,11 @@ export function BookingForm({ shop, services, holidays, bookings, demoMode = fal
     [bookingDate, durationValue, holidays, isDailyBooking, shop]
   );
 
+  const dailyCapacityAvailability = useMemo(
+    () => (isDailyBooking && bookingDate && bookingEndDate ? getDailyBookingAvailability(shop, holidays, bookings, bookingDate, bookingEndDate) : { available: true, blockedDate: null }),
+    [bookingDate, bookingEndDate, bookings, holidays, isDailyBooking, shop]
+  );
+
   useEffect(() => {
     setValue("booking_kind", bookingKind, { shouldValidate: true });
     if (bookingKind === "hourly") {
@@ -113,12 +118,14 @@ export function BookingForm({ shop, services, holidays, bookings, demoMode = fal
       } else if (bookingEndDate) {
         if (minimumEndDate && bookingEndDate < minimumEndDate) {
           setError("booking_end_date", { type: "validate", message: "วันสิ้นสุดสั้นกว่าระยะเวลาบริการรวม" });
+        } else if (!dailyCapacityAvailability.available) {
+          setError("booking_end_date", { type: "validate", message: "คิวรายวันเต็มในช่วงวันที่เลือก กรุณาเลือกช่วงวันใหม่" });
         } else {
           clearErrors("booking_end_date");
         }
       }
     }
-  }, [bookingDateAvailability, bookingEndDate, bookingEndDateAvailability, bookingKind, clearErrors, minimumEndDate, setError, setValue]);
+  }, [bookingDateAvailability, bookingEndDate, bookingEndDateAvailability, bookingKind, clearErrors, dailyCapacityAvailability, minimumEndDate, setError, setValue]);
 
   async function onSubmit(values: BookingFormValues) {
     if (hasMixedServices) {
