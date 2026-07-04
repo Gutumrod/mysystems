@@ -1,6 +1,28 @@
-import { addDays, addHours, format, isBefore, isSameDay, parse, set } from "date-fns";
+import { addHours, format, parse } from "date-fns";
 import { th } from "date-fns/locale";
 import type { BookingConfirmation, BookingKind, BookingSlot, ServiceItem, Shop, ShopHoliday, WeekdayKey } from "./types";
+
+const BANGKOK_OFFSET_MS = 7 * 60 * 60 * 1000; // Asia/Bangkok = UTC+7, fixed (no DST)
+
+/**
+ * True Date instant for a Bangkok wall-clock date [+ time] string — correct
+ * regardless of the visitor's device timezone. Use this instead of parse()/
+ * new Date(iso) whenever a date/time string represents what the SHOP means
+ * (shop hours, holidays, booking date — always Bangkok time).
+ */
+export function parseBangkokDateTime(dateStr: string, timeStr = "00:00"): Date {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const [hh, mm] = timeStr.split(":").map(Number);
+  return new Date(Date.UTC(y, m - 1, d, hh, mm) - BANGKOK_OFFSET_MS);
+}
+
+function formatBangkokTime(date: Date): string {
+  return new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Bangkok", hour: "2-digit", minute: "2-digit", hour12: false }).format(date);
+}
+
+const WEEKDAY_SHORT_TO_KEY: Record<string, WeekdayKey> = {
+  Sun: "sun", Mon: "mon", Tue: "tue", Wed: "wed", Thu: "thu", Fri: "fri", Sat: "sat"
+};
 
 export function cn(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(" ");
@@ -16,7 +38,8 @@ export function getShopId() {
 }
 
 export function toWeekdayKey(date: Date): WeekdayKey {
-  return (["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const)[date.getDay()];
+  const short = new Intl.DateTimeFormat("en-US", { timeZone: "Asia/Bangkok", weekday: "short" }).format(date);
+  return WEEKDAY_SHORT_TO_KEY[short];
 }
 
 export function formatThaiDate(date: string | Date) {
@@ -36,15 +59,11 @@ export type BookingDateAvailability = {
   reason: string | null;
 };
 
-function midnightToday() {
-  return set(new Date(), { hours: 0, minutes: 0, seconds: 0, milliseconds: 0 });
-}
-
 export function getBookingDateAvailability(shop: Shop, holidays: ShopHoliday[], date: Date): BookingDateAvailability {
-  const iso = format(date, "yyyy-MM-dd");
+  const iso = formatBangkokISODate(date);
   const dayKey = toWeekdayKey(date);
 
-  if (isBefore(date, midnightToday())) {
+  if (iso < formatBangkokISODate(new Date())) {
     return {
       kind: "past",
       closed: true,
@@ -119,7 +138,7 @@ export function calculateEndTime(date: string, start: string, durationHours: num
 
 export function calculateMinimumDailyEndDate(startDate: string, requiredDays: number, shop: Shop, holidays: ShopHoliday[]) {
   if (!startDate) return "";
-  const parsedStart = parse(startDate, "yyyy-MM-dd", new Date());
+  const parsedStart = parseBangkokDateTime(startDate);
   const safeDays = Math.max(Math.floor(requiredDays), 1);
   let countedDays = 0;
   let cursor = parsedStart;
@@ -135,10 +154,10 @@ export function calculateMinimumDailyEndDate(startDate: string, requiredDays: nu
       break;
     }
 
-    cursor = addDays(cursor, 1);
+    cursor = new Date(cursor.getTime() + 24 * 60 * 60 * 1000);
   }
 
-  return format(lastOpenDate, "yyyy-MM-dd");
+  return formatBangkokISODate(lastOpenDate);
 }
 
 function normalizedCapacity(value: number | undefined, fallback: number, minimum: number) {
@@ -160,8 +179,8 @@ function hasCapacityAcrossWindow(date: string, startAt: Date, endAt: Date, slotC
 
   while (segmentStart < endAt) {
     const segmentEnd = addHours(segmentStart, 1) < endAt ? addHours(segmentStart, 1) : endAt;
-    const segmentStartText = format(segmentStart, "HH:mm");
-    const segmentEndText = format(segmentEnd, "HH:mm");
+    const segmentStartText = formatBangkokTime(segmentStart);
+    const segmentEndText = formatBangkokTime(segmentEnd);
     const overlapCount = bookings.filter((booking) => {
       if (booking.booking_kind !== "hourly" || booking.booking_date !== date || !isSlotWorkloadStatus(booking.status)) return false;
       if (!booking.booking_time_start || !booking.booking_time_end) return false;
@@ -176,26 +195,27 @@ function hasCapacityAcrossWindow(date: string, startAt: Date, endAt: Date, slotC
 }
 
 export function buildTimeSlots(shop: Shop, date: string, durationHours: number, bookings: BookingSlot[]) {
-  const dateObj = parse(date, "yyyy-MM-dd", new Date());
+  const dateObj = parseBangkokDateTime(date);
   const day = shop.working_hours[toWeekdayKey(dateObj)];
   if (!day?.enabled) return [];
 
   const slots: Array<{ start: string; end: string; available: boolean }> = [];
   const now = new Date();
+  const isToday = formatBangkokISODate(dateObj) === formatBangkokISODate(now);
   const duration = Math.max(durationHours, 1);
   const slotCapacity = normalizedCapacity(day.slot_capacity, 1, 1);
-  let cursor = parse(`${date} ${day.start}`, "yyyy-MM-dd HH:mm", new Date());
-  const close = parse(`${date} ${day.end}`, "yyyy-MM-dd HH:mm", new Date());
+  let cursor = parseBangkokDateTime(date, day.start);
+  const close = parseBangkokDateTime(date, day.end);
 
   while (addHours(cursor, duration) <= close) {
-    if (isSameDay(dateObj, now) && cursor <= now) {
+    if (isToday && cursor <= now) {
       cursor = addHours(cursor, 1);
       continue;
     }
 
-    const start = format(cursor, "HH:mm");
+    const start = formatBangkokTime(cursor);
     const endAt = addHours(cursor, duration);
-    const end = format(endAt, "HH:mm");
+    const end = formatBangkokTime(endAt);
     const available = hasCapacityAcrossWindow(date, cursor, endAt, slotCapacity, bookings);
     slots.push({ start, end, available });
     cursor = addHours(cursor, 1);

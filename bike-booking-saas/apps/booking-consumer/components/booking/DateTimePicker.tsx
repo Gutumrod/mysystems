@@ -1,12 +1,11 @@
 "use client";
 
-import { format } from "date-fns";
 import { Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import type { BookingKind, BookingSlot, Shop, ShopHoliday } from "@/lib/types";
-import { buildTimeSlots, cn, getBookingDateAvailability, formatThaiDate } from "@/lib/utils";
+import { buildTimeSlots, cn, formatBangkokISODate, getBookingDateAvailability, formatThaiDate, parseBangkokDateTime } from "@/lib/utils";
 
 type Props = {
   shop: Shop;
@@ -44,8 +43,8 @@ export function DateTimePicker({
   onTimeChange
 }: Props) {
   const slots = bookingKind === "hourly" && date ? buildTimeSlots(shop, date, Math.max(durationValue, 1), bookings) : [];
-  const selectedDateStatus = date ? getBookingDateAvailability(shop, holidays, new Date(`${date}T00:00:00`)) : null;
-  const selectedEndDateStatus = bookingKind === "daily" && endDate ? getBookingDateAvailability(shop, holidays, new Date(`${endDate}T00:00:00`)) : null;
+  const selectedDateStatus = date ? getBookingDateAvailability(shop, holidays, parseBangkokDateTime(date)) : null;
+  const selectedEndDateStatus = bookingKind === "daily" && endDate ? getBookingDateAvailability(shop, holidays, parseBangkokDateTime(endDate)) : null;
 
   return (
     <div className="flex flex-col gap-4">
@@ -69,7 +68,7 @@ export function DateTimePicker({
         <Input
           id="booking_date"
           type="date"
-          min={format(new Date(), "yyyy-MM-dd")}
+          min={formatBangkokISODate(new Date())}
           value={date}
           onChange={(event) => {
             onDateChange(event.target.value);
@@ -119,7 +118,7 @@ export function DateTimePicker({
           <Input
             id="booking_end_date"
             type="date"
-            min={minimumEndDate || date || format(new Date(), "yyyy-MM-dd")}
+            min={minimumEndDate || date || formatBangkokISODate(new Date())}
             value={endDate}
             onChange={(event) => onEndDateChange(event.target.value)}
             aria-invalid={Boolean(endDateError)}

@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { BookingSlot, ServiceItem, Shop, ShopHoliday } from "@/lib/types";
 import { bookingSchema, type BookingFormValues } from "@/lib/validations";
-import { calculateEndTime, calculateMinimumDailyEndDate, cn, getBookingDateAvailability, resolveSelectedBookingMode } from "@/lib/utils";
+import { calculateEndTime, calculateMinimumDailyEndDate, cn, getBookingDateAvailability, parseBangkokDateTime, resolveSelectedBookingMode } from "@/lib/utils";
 import { createBrowserClient } from "@/lib/supabase/client";
 import { BikeModelAutocomplete } from "./BikeModelAutocomplete";
 import { DateTimePicker } from "./DateTimePicker";
@@ -69,11 +69,11 @@ export function BookingForm({ shop, services, holidays, bookings, demoMode = fal
   const hasMixedServices = selectedMode.mixed;
   const durationValue = selectedMode.value;
   const bookingDateAvailability = useMemo(
-    () => (bookingDate ? getBookingDateAvailability(shop, holidays, new Date(`${bookingDate}T00:00:00`)) : null),
+    () => (bookingDate ? getBookingDateAvailability(shop, holidays, parseBangkokDateTime(bookingDate)) : null),
     [bookingDate, holidays, shop]
   );
   const bookingEndDateAvailability = useMemo(
-    () => (bookingEndDate ? getBookingDateAvailability(shop, holidays, new Date(`${bookingEndDate}T00:00:00`)) : null),
+    () => (bookingEndDate ? getBookingDateAvailability(shop, holidays, parseBangkokDateTime(bookingEndDate)) : null),
     [bookingEndDate, holidays, shop]
   );
   const minimumEndDate = useMemo(
