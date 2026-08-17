@@ -35,6 +35,18 @@
       margin: 0 0 20px;
     }
 
+    .project-title {
+      color: var(--accent);
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin: 24px 0 8px;
+    }
+
+    .project-title:first-of-type {
+      margin-top: 0;
+    }
+
     .card {
       display: flex;
       justify-content: space-between;
@@ -122,6 +134,8 @@
     <div id="list"></div>
 
     <form id="addForm">
+      <input id="project" list="projectOptions" placeholder="โปรเจค (เช่น KMO)" required>
+      <datalist id="projectOptions"></datalist>
       <input id="label" placeholder="ชื่อ / คืออะไร (เช่น เช็คงานหน้าร้าน)" required>
       <input id="url" type="url" placeholder="https://..." required>
       <button type="submit">เพิ่มลิงก์</button>
@@ -131,13 +145,14 @@
   <script>
     const STORAGE_KEY = 'personal_links_hub_v1';
     const DEFAULT_LINKS = [
-      { label: 'เช็คงานหน้าร้าน', url: 'https://kmorackbarcustom.github.io/bookingdashboard.html' },
-      { label: 'เช็คงานออเดอร์', url: 'https://kmorackbarcustom.github.io/AdminOrderDashboard.html' },
-      { label: 'จองคิว', url: 'https://kmorackbarcustom.github.io/booking.html' },
-      { label: 'สั่งออเดอร์', url: 'https://kmorackbarcustom.github.io/ShopeeOrder.html' },
-      { label: 'คำนวนเงินใน Shopee', url: 'https://gutumrod.github.io/mysystems/shopee-calc.html' },
-      { label: 'ปิด AI ตอบแชทไลน์', url: 'https://kmorackbarcustom.github.io/admin-line-reply.html' },
+      { project: 'KMO', label: 'เช็คงานหน้าร้าน', url: 'https://kmorackbarcustom.github.io/bookingdashboard.html' },
+      { project: 'KMO', label: 'เช็คงานออเดอร์', url: 'https://kmorackbarcustom.github.io/AdminOrderDashboard.html' },
+      { project: 'KMO', label: 'จองคิว', url: 'https://kmorackbarcustom.github.io/booking.html' },
+      { project: 'KMO', label: 'สั่งออเดอร์', url: 'https://kmorackbarcustom.github.io/ShopeeOrder.html' },
+      { project: 'KMO', label: 'คำนวนเงินใน Shopee', url: 'https://gutumrod.github.io/mysystems/shopee-calc.html' },
+      { project: 'KMO', label: 'ปิด AI ตอบแชทไลน์', url: 'https://kmorackbarcustom.github.io/admin-line-reply.html' },
     ];
+    const UNCATEGORIZED = 'อื่นๆ';
 
     function loadLinks() {
       try {
@@ -154,10 +169,22 @@
       localStorage.setItem(STORAGE_KEY, JSON.stringify(links));
     }
 
+    function updateProjectOptions(links) {
+      const projects = [...new Set(links.map((link) => link.project || UNCATEGORIZED))];
+      const datalist = document.getElementById('projectOptions');
+      datalist.replaceChildren();
+      projects.forEach((project) => {
+        const option = document.createElement('option');
+        option.value = project;
+        datalist.appendChild(option);
+      });
+    }
+
     function render() {
       const links = loadLinks();
       const list = document.getElementById('list');
       list.replaceChildren();
+      updateProjectOptions(links);
 
       if (links.length === 0) {
         const empty = document.createElement('p');
@@ -167,43 +194,58 @@
         return;
       }
 
-      links.forEach((link, index) => {
-        const card = document.createElement('div');
-        card.className = 'card';
-
-        const a = document.createElement('a');
-        a.href = link.url;
-        a.target = '_blank';
-        a.rel = 'noopener';
-        a.textContent = link.label;
-        const small = document.createElement('small');
-        small.textContent = link.url;
-        a.appendChild(small);
-
-        const delBtn = document.createElement('button');
-        delBtn.className = 'del-btn';
-        delBtn.textContent = '✕';
-        delBtn.title = 'ลบลิงก์นี้';
-        delBtn.addEventListener('click', () => {
-          const current = loadLinks();
-          current.splice(index, 1);
-          saveLinks(current);
-          render();
-        });
-
-        card.append(a, delBtn);
-        list.appendChild(card);
+      const groups = new Map();
+      links.forEach((link) => {
+        const project = link.project || UNCATEGORIZED;
+        if (!groups.has(project)) groups.set(project, []);
+        groups.get(project).push(link);
       });
+
+      for (const [project, groupLinks] of groups) {
+        const title = document.createElement('h2');
+        title.className = 'project-title';
+        title.textContent = project;
+        list.appendChild(title);
+
+        groupLinks.forEach((link) => {
+          const card = document.createElement('div');
+          card.className = 'card';
+
+          const a = document.createElement('a');
+          a.href = link.url;
+          a.target = '_blank';
+          a.rel = 'noopener';
+          a.textContent = link.label;
+          const small = document.createElement('small');
+          small.textContent = link.url;
+          a.appendChild(small);
+
+          const delBtn = document.createElement('button');
+          delBtn.className = 'del-btn';
+          delBtn.textContent = '✕';
+          delBtn.title = 'ลบลิงก์นี้';
+          delBtn.addEventListener('click', () => {
+            const current = loadLinks();
+            current.splice(current.indexOf(link), 1);
+            saveLinks(current);
+            render();
+          });
+
+          card.append(a, delBtn);
+          list.appendChild(card);
+        });
+      }
     }
 
     document.getElementById('addForm').addEventListener('submit', (event) => {
       event.preventDefault();
+      const project = document.getElementById('project').value.trim();
       const label = document.getElementById('label').value.trim();
       const url = document.getElementById('url').value.trim();
-      if (!label || !url) return;
+      if (!project || !label || !url) return;
 
       const links = loadLinks();
-      links.push({ label, url });
+      links.push({ project, label, url });
       saveLinks(links);
       event.target.reset();
       render();
