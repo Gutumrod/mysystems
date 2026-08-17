@@ -143,31 +143,28 @@
   </main>
 
   <script>
-    const STORAGE_KEY = 'personal_links_hub_v1';
-    const DEFAULT_LINKS = [
-      { project: 'KMO', label: 'เช็คงานหน้าร้าน', url: 'https://kmorackbarcustom.github.io/bookingdashboard.html' },
-      { project: 'KMO', label: 'เช็คงานออเดอร์', url: 'https://kmorackbarcustom.github.io/AdminOrderDashboard.html' },
-      { project: 'KMO', label: 'จองคิว', url: 'https://kmorackbarcustom.github.io/booking.html' },
-      { project: 'KMO', label: 'สั่งออเดอร์', url: 'https://kmorackbarcustom.github.io/ShopeeOrder.html' },
-      { project: 'KMO', label: 'คำนวนเงินใน Shopee', url: 'https://gutumrod.github.io/mysystems/shopee-calc.html' },
-      { project: 'KMO', label: 'ปิด AI ตอบแชทไลน์', url: 'https://kmorackbarcustom.github.io/admin-line-reply.html' },
-    ];
+    const SUPA_URL = 'https://ybyseaenceyswjnwdmdf.supabase.co';
+    const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlieXNlYWVuY2V5c3dqbndkbWRmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3OTk3MTgsImV4cCI6MjA4OTM3NTcxOH0.NpaB7XrM0MzTknMvFLKkN57WG7_GkCb9zxZQUROz9Ug';
     const UNCATEGORIZED = 'อื่นๆ';
 
-    function loadLinks() {
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (raw) return JSON.parse(raw);
-      } catch (error) {
-        console.error('load failed', error);
-      }
-      saveLinks(DEFAULT_LINKS);
-      return DEFAULT_LINKS;
+    async function supaFetch(path, options = {}) {
+      const res = await fetch(`${SUPA_URL}/rest/v1/${path}`, {
+        ...options,
+        headers: {
+          'apikey': SUPA_KEY,
+          'Authorization': `Bearer ${SUPA_KEY}`,
+          'Content-Type': 'application/json',
+          ...(options.headers || {}),
+        },
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const text = await res.text();
+      return text ? JSON.parse(text) : null;
     }
 
-    function saveLinks(links) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(links));
-    }
+    const loadLinks = () => supaFetch('links?select=*&order=created_at.asc');
+    const addLink = (link) => supaFetch('links', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(link) });
+    const deleteLink = (id) => supaFetch(`links?id=eq.${id}`, { method: 'DELETE', headers: { Prefer: 'return=minimal' } });
 
     function updateProjectOptions(links) {
       const projects = [...new Set(links.map((link) => link.project || UNCATEGORIZED))];
@@ -180,9 +177,20 @@
       });
     }
 
-    function render() {
-      const links = loadLinks();
+    async function render() {
       const list = document.getElementById('list');
+      let links;
+      try {
+        links = await loadLinks();
+      } catch (error) {
+        list.replaceChildren();
+        const errEl = document.createElement('p');
+        errEl.className = 'empty';
+        errEl.textContent = `โหลดลิงก์ไม่สำเร็จ: ${error.message}`;
+        list.appendChild(errEl);
+        return;
+      }
+
       list.replaceChildren();
       updateProjectOptions(links);
 
@@ -224,10 +232,9 @@
           delBtn.className = 'del-btn';
           delBtn.textContent = '✕';
           delBtn.title = 'ลบลิงก์นี้';
-          delBtn.addEventListener('click', () => {
-            const current = loadLinks();
-            current.splice(current.indexOf(link), 1);
-            saveLinks(current);
+          delBtn.addEventListener('click', async () => {
+            delBtn.disabled = true;
+            await deleteLink(link.id);
             render();
           });
 
@@ -237,18 +244,22 @@
       }
     }
 
-    document.getElementById('addForm').addEventListener('submit', (event) => {
+    document.getElementById('addForm').addEventListener('submit', async (event) => {
       event.preventDefault();
       const project = document.getElementById('project').value.trim();
       const label = document.getElementById('label').value.trim();
       const url = document.getElementById('url').value.trim();
       if (!project || !label || !url) return;
 
-      const links = loadLinks();
-      links.push({ project, label, url });
-      saveLinks(links);
-      event.target.reset();
-      render();
+      const submitBtn = event.target.querySelector('button[type="submit"]');
+      submitBtn.disabled = true;
+      try {
+        await addLink({ project, label, url });
+        event.target.reset();
+        await render();
+      } finally {
+        submitBtn.disabled = false;
+      }
     });
 
     render();
