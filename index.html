@@ -2,150 +2,924 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ลิงก์ด่วน</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>COMMAND DECK // My Systems</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  
   <style>
     :root {
-      --bg: #101214;
-      --panel: #181b1f;
-      --border: #30343a;
-      --text: #f5f5f5;
-      --muted: #a8adb5;
-      --accent: #ffcf07;
-      --danger: #ef4444;
+      --bg: #07090e;
+      --panel: rgba(18, 23, 34, 0.65);
+      --border: rgba(255, 255, 255, 0.08);
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --card-radius: 20px;
     }
 
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
 
     body {
-      margin: 0;
       background: var(--bg);
       color: var(--text);
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-family: "IBM Plex Sans Thai", system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
       line-height: 1.5;
+      position: relative;
+      overflow-x: hidden;
     }
 
-    main {
-      width: min(640px, calc(100% - 32px));
+    /* Ambient Background Aurora Mesh */
+    .aurora-1 {
+      position: fixed;
+      top: -160px;
+      left: 15%;
+      width: 550px;
+      height: 550px;
+      background: radial-gradient(circle, rgba(168, 85, 247, 0.16) 0%, rgba(56, 189, 248, 0.1) 45%, transparent 70%);
+      filter: blur(90px);
+      pointer-events: none;
+      z-index: 0;
+      animation: floatAurora1 18s ease-in-out infinite alternate;
+    }
+
+    .aurora-2 {
+      position: fixed;
+      top: 150px;
+      right: 10%;
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, rgba(249, 115, 22, 0.14) 0%, rgba(244, 63, 94, 0.09) 45%, transparent 70%);
+      filter: blur(90px);
+      pointer-events: none;
+      z-index: 0;
+      animation: floatAurora2 22s ease-in-out infinite alternate;
+    }
+
+    .aurora-3 {
+      position: fixed;
+      bottom: -100px;
+      left: 30%;
+      width: 600px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(16, 185, 129, 0.12) 0%, rgba(20, 184, 166, 0.08) 50%, transparent 70%);
+      filter: blur(90px);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    @keyframes floatAurora1 {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(60px, 40px) scale(1.15); }
+    }
+
+    @keyframes floatAurora2 {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(-50px, -30px) scale(1.1); }
+    }
+
+    /* Ambient fine grid */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image: 
+        linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+      background-size: 36px 36px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      width: min(1080px, calc(100% - 32px));
       margin: 0 auto;
-      padding: 32px 0 56px;
+      padding: 24px 0 80px;
+      position: relative;
+      z-index: 1;
     }
 
-    h1 {
-      margin: 0 0 20px;
-    }
-
-    .project-title {
-      color: var(--accent);
-      font-size: 14px;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      margin: 24px 0 8px;
-    }
-
-    .project-title:first-of-type {
-      margin-top: 0;
-    }
-
-    .card {
+    /* Header */
+    header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 12px;
+      padding: 16px 20px;
       background: var(--panel);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
       border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 14px 16px;
-      margin-bottom: 10px;
+      border-radius: 22px;
+      margin-bottom: 24px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
     }
 
-    .card a {
-      color: var(--text);
-      text-decoration: none;
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #f59e0b 0%, #ec4899 50%, #38bdf8 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 20px rgba(236, 72, 153, 0.4);
+      color: #fff;
+    }
+
+    .brand-info h1 {
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      background: linear-gradient(90deg, #fff 0%, #cbd5e1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand-info .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 10px #10b981;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .action-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 9px 15px;
+      border-radius: 12px;
+      font-size: 13px;
       font-weight: 600;
-    }
-
-    .card a:hover {
-      color: var(--accent);
-    }
-
-    .card small {
-      display: block;
-      color: var(--muted);
-      font-weight: 400;
-      margin-top: 2px;
-      word-break: break-all;
-    }
-
-    .del-btn {
-      flex-shrink: 0;
-      border: 0;
-      background: transparent;
-      color: var(--muted);
       cursor: pointer;
-      font-size: 18px;
-      padding: 4px 8px;
-      border-radius: 6px;
+      transition: all 0.2s ease;
     }
 
-    .del-btn:hover {
-      color: var(--danger);
-      background: #2a2020;
+    .action-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      border-color: rgba(255, 255, 255, 0.2);
     }
 
-    form {
+    .action-btn.active {
+      background: rgba(239, 68, 68, 0.18);
+      border-color: rgba(239, 68, 68, 0.5);
+      color: #fca5a5;
+    }
+
+    .action-btn.primary {
+      background: linear-gradient(135deg, #f59e0b 0%, #ef4444 50%, #ec4899 100%);
+      border: none;
+      color: #fff;
+      font-weight: 700;
+      box-shadow: 0 4px 18px rgba(239, 68, 68, 0.35);
+    }
+
+    .action-btn.primary:hover {
+      filter: brightness(1.12);
+      transform: translateY(-1px);
+    }
+
+    /* Controls (Search & Filters) */
+    .controls-row {
       display: flex;
       flex-direction: column;
-      gap: 8px;
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 16px;
-      margin-top: 24px;
+      gap: 14px;
+      margin-bottom: 28px;
     }
 
-    input {
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      background: #0c0e10;
-      color: var(--text);
-      padding: 10px;
-      font: inherit;
+    @media (min-width: 640px) {
+      .controls-row {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+      }
     }
 
-    button[type="submit"] {
-      border: 0;
-      border-radius: 8px;
-      background: var(--accent);
-      color: #050505;
-      font-weight: 700;
-      padding: 10px;
-      cursor: pointer;
+    .search-box {
+      position: relative;
+      flex: 1;
+      max-width: 440px;
     }
 
-    .empty {
+    .search-icon {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
       color: var(--muted);
+      pointer-events: none;
+    }
+
+    .search-input {
+      width: 100%;
+      background: var(--panel);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px 16px 12px 42px;
+      color: #fff;
+      font-size: 14px;
+      font-family: inherit;
+      transition: all 0.2s ease;
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: #38bdf8;
+      box-shadow: 0 0 20px rgba(56, 189, 248, 0.25);
+    }
+
+    .filter-pills {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      scrollbar-width: none;
+    }
+
+    .filter-pills::-webkit-scrollbar {
+      display: none;
+    }
+
+    .pill {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 7px 16px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--muted);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+    }
+
+    .pill:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+    }
+
+    .pill.active {
+      background: linear-gradient(135deg, rgba(56, 189, 248, 0.2) 0%, rgba(168, 85, 247, 0.2) 100%);
+      border-color: rgba(56, 189, 248, 0.5);
+      color: #fff;
+      font-weight: 600;
+      box-shadow: 0 0 16px rgba(56, 189, 248, 0.2);
+    }
+
+    /* Section & Bento Grid */
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #94a3b8;
+      margin: 32px 0 16px;
+    }
+
+    .section-title::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(to right, var(--border), transparent);
+    }
+
+    .bento-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+    }
+
+    /* Bento Card Base */
+    .bento-card {
+      background: var(--panel);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--border);
+      border-radius: var(--card-radius);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 16px;
+      position: relative;
+      text-decoration: none;
+      color: inherit;
+      transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+      overflow: hidden;
+    }
+
+    .bento-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .bento-card:hover {
+      transform: translateY(-4px);
+    }
+
+    .bento-card:hover::before {
+      opacity: 1;
+    }
+
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .card-icon-box {
+      width: 48px;
+      height: 48px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.25s ease;
+    }
+
+    .bento-card:hover .card-icon-box {
+      transform: scale(1.08) rotate(3deg);
+    }
+
+    .card-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .project-tag {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 4px 9px;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .launch-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+      transition: all 0.2s ease;
+    }
+
+    .card-content {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.4;
+    }
+
+    .card-url {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+      word-break: break-all;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      display: block;
+    }
+
+    /* ===================================================
+       VIBRANT DYNAMIC COLOR THEMES FOR CARDS
+       =================================================== */
+
+    /* 1. Theme Orange (Orders / Shopee) */
+    .theme-orange::before { background: linear-gradient(90deg, transparent, #f97316, transparent); }
+    .theme-orange:hover {
+      border-color: rgba(249, 115, 22, 0.45);
+      box-shadow: 0 12px 30px -6px rgba(0,0,0,0.6), 0 0 28px rgba(249, 115, 22, 0.25);
+    }
+    .theme-orange .card-icon-box {
+      background: linear-gradient(135deg, rgba(249, 115, 22, 0.2) 0%, rgba(239, 68, 68, 0.25) 100%);
+      border: 1px solid rgba(249, 115, 22, 0.35);
+      color: #fb923c;
+      box-shadow: 0 0 16px rgba(249, 115, 22, 0.2);
+    }
+    .theme-orange .project-tag { background: rgba(249, 115, 22, 0.15); color: #fdba74; }
+    .theme-orange:hover .launch-btn { background: #f97316; border-color: #f97316; color: #fff; }
+
+    /* 2. Theme Purple (AI / LINE Bot) */
+    .theme-purple::before { background: linear-gradient(90deg, transparent, #a855f7, transparent); }
+    .theme-purple:hover {
+      border-color: rgba(168, 85, 247, 0.45);
+      box-shadow: 0 12px 30px -6px rgba(0,0,0,0.6), 0 0 28px rgba(168, 85, 247, 0.25);
+    }
+    .theme-purple .card-icon-box {
+      background: linear-gradient(135deg, rgba(168, 85, 247, 0.2) 0%, rgba(236, 72, 153, 0.25) 100%);
+      border: 1px solid rgba(168, 85, 247, 0.35);
+      color: #c084fc;
+      box-shadow: 0 0 16px rgba(168, 85, 247, 0.2);
+    }
+    .theme-purple .project-tag { background: rgba(168, 85, 247, 0.15); color: #d8b4fe; }
+    .theme-purple:hover .launch-btn { background: #a855f7; border-color: #a855f7; color: #fff; }
+
+    /* 3. Theme Green (Booking / Reservations) */
+    .theme-green::before { background: linear-gradient(90deg, transparent, #10b981, transparent); }
+    .theme-green:hover {
+      border-color: rgba(16, 185, 129, 0.45);
+      box-shadow: 0 12px 30px -6px rgba(0,0,0,0.6), 0 0 28px rgba(16, 185, 129, 0.25);
+    }
+    .theme-green .card-icon-box {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(6, 182, 212, 0.25) 100%);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      color: #34d399;
+      box-shadow: 0 0 16px rgba(16, 185, 129, 0.2);
+    }
+    .theme-green .project-tag { background: rgba(16, 185, 129, 0.15); color: #6ee7b7; }
+    .theme-green:hover .launch-btn { background: #10b981; border-color: #10b981; color: #fff; }
+
+    /* 4. Theme Cyan (Storefront Dashboard) */
+    .theme-cyan::before { background: linear-gradient(90deg, transparent, #38bdf8, transparent); }
+    .theme-cyan:hover {
+      border-color: rgba(56, 189, 248, 0.45);
+      box-shadow: 0 12px 30px -6px rgba(0,0,0,0.6), 0 0 28px rgba(56, 189, 248, 0.25);
+    }
+    .theme-cyan .card-icon-box {
+      background: linear-gradient(135deg, rgba(56, 189, 248, 0.2) 0%, rgba(37, 99, 235, 0.25) 100%);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      color: #38bdf8;
+      box-shadow: 0 0 16px rgba(56, 189, 248, 0.2);
+    }
+    .theme-cyan .project-tag { background: rgba(56, 189, 248, 0.15); color: #7dd3fc; }
+    .theme-cyan:hover .launch-btn { background: #38bdf8; border-color: #38bdf8; color: #020617; font-weight: 700; }
+
+    /* 5. Theme Gold (Products / Pricing) */
+    .theme-gold::before { background: linear-gradient(90deg, transparent, #f59e0b, transparent); }
+    .theme-gold:hover {
+      border-color: rgba(245, 158, 11, 0.45);
+      box-shadow: 0 12px 30px -6px rgba(0,0,0,0.6), 0 0 28px rgba(245, 158, 11, 0.25);
+    }
+    .theme-gold .card-icon-box {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(234, 179, 8, 0.25) 100%);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      color: #fbbf24;
+      box-shadow: 0 0 16px rgba(245, 158, 11, 0.2);
+    }
+    .theme-gold .project-tag { background: rgba(245, 158, 11, 0.15); color: #fcd34d; }
+    .theme-gold:hover .launch-btn { background: #f59e0b; border-color: #f59e0b; color: #000; font-weight: 700; }
+
+    /* 6. Theme Rose (Tools / Invoices) */
+    .theme-rose::before { background: linear-gradient(90deg, transparent, #f43f5e, transparent); }
+    .theme-rose:hover {
+      border-color: rgba(244, 63, 94, 0.45);
+      box-shadow: 0 12px 30px -6px rgba(0,0,0,0.6), 0 0 28px rgba(244, 63, 94, 0.25);
+    }
+    .theme-rose .card-icon-box {
+      background: linear-gradient(135deg, rgba(244, 63, 94, 0.2) 0%, rgba(217, 70, 239, 0.25) 100%);
+      border: 1px solid rgba(244, 63, 94, 0.35);
+      color: #fb7185;
+      box-shadow: 0 0 16px rgba(244, 63, 94, 0.2);
+    }
+    .theme-rose .project-tag { background: rgba(244, 63, 94, 0.15); color: #fda4af; }
+    .theme-rose:hover .launch-btn { background: #f43f5e; border-color: #f43f5e; color: #fff; }
+
+    /* 7. Theme Teal (Admin / Shop Config) */
+    .theme-teal::before { background: linear-gradient(90deg, transparent, #14b8a6, transparent); }
+    .theme-teal:hover {
+      border-color: rgba(20, 184, 166, 0.45);
+      box-shadow: 0 12px 30px -6px rgba(0,0,0,0.6), 0 0 28px rgba(20, 184, 166, 0.25);
+    }
+    .theme-teal .card-icon-box {
+      background: linear-gradient(135deg, rgba(20, 184, 166, 0.2) 0%, rgba(59, 130, 246, 0.25) 100%);
+      border: 1px solid rgba(20, 184, 166, 0.35);
+      color: #2dd4bf;
+      box-shadow: 0 0 16px rgba(20, 184, 166, 0.2);
+    }
+    .theme-teal .project-tag { background: rgba(20, 184, 166, 0.15); color: #5eead4; }
+    .theme-teal:hover .launch-btn { background: #14b8a6; border-color: #14b8a6; color: #000; font-weight: 700; }
+
+    /* 8. Theme Ruby (Audit / Staff Security) */
+    .theme-ruby::before { background: linear-gradient(90deg, transparent, #ef4444, transparent); }
+    .theme-ruby:hover {
+      border-color: rgba(239, 68, 68, 0.45);
+      box-shadow: 0 12px 30px -6px rgba(0,0,0,0.6), 0 0 28px rgba(239, 68, 68, 0.25);
+    }
+    .theme-ruby .card-icon-box {
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(153, 27, 27, 0.25) 100%);
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      color: #f87171;
+      box-shadow: 0 0 16px rgba(239, 68, 68, 0.2);
+    }
+    .theme-ruby .project-tag { background: rgba(239, 68, 68, 0.15); color: #fca5a5; }
+    .theme-ruby:hover .launch-btn { background: #ef4444; border-color: #ef4444; color: #fff; }
+
+    /* Delete Button in Edit Mode */
+    .card-del-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #ef4444;
+      border: 2px solid #fff;
+      color: #fff;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 10;
+      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.5);
+      animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    @keyframes popIn {
+      from { transform: scale(0); }
+      to { transform: scale(1); }
+    }
+
+    body.edit-mode .card-del-btn {
+      display: flex;
+    }
+
+    body.edit-mode .launch-btn {
+      display: none;
+    }
+
+    body.edit-mode .bento-card {
+      animation: wiggle 0.4s ease infinite alternate;
+    }
+
+    @keyframes wiggle {
+      from { transform: rotate(-0.5deg); }
+      to { transform: rotate(0.5deg); }
+    }
+
+    /* Add Link Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+      padding: 16px;
+    }
+
+    .modal-overlay.open {
+      display: flex;
+    }
+
+    .modal-card {
+      background: #111622;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      box-shadow: 0 24px 48px rgba(0, 0, 0, 0.8), 0 0 32px rgba(56, 189, 248, 0.2);
+      border-radius: 24px;
+      width: min(480px, 100%);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      animation: modalSlide 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes modalSlide {
+      from { transform: scale(0.94) translateY(12px); opacity: 0; }
+      to { transform: scale(1) translateY(0); opacity: 1; }
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-header h2 {
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .close-btn {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-size: 20px;
+      cursor: pointer;
+      padding: 4px;
+    }
+
+    .close-btn:hover {
+      color: #fff;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-group label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .form-control {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 14px;
+      color: #fff;
+      font-size: 14px;
+      font-family: inherit;
+      transition: all 0.2s ease;
+    }
+
+    .form-control:focus {
+      outline: none;
+      border-color: #38bdf8;
+      background: rgba(255, 255, 255, 0.07);
+    }
+
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    /* Empty state & Loading */
+    .state-box {
+      text-align: center;
+      padding: 64px 20px;
+      color: var(--muted);
+      background: var(--panel);
+      border: 1px dashed var(--border);
+      border-radius: var(--card-radius);
+      margin-top: 20px;
+    }
+
+    .state-box p {
+      font-size: 15px;
+      margin-top: 8px;
+    }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: #1e293b;
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 14px;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+      font-size: 14px;
+      font-weight: 500;
+      z-index: 1000;
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      pointer-events: none;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
     }
   </style>
 </head>
 <body>
-  <main>
-    <h1>ลิงก์ด่วน</h1>
-    <div id="list"></div>
+  <!-- Ambient Aurora Blurs -->
+  <div class="aurora-1"></div>
+  <div class="aurora-2"></div>
+  <div class="aurora-3"></div>
 
-    <form id="addForm">
-      <input id="project" list="projectOptions" placeholder="โปรเจค (เช่น KMO)" required>
-      <datalist id="projectOptions"></datalist>
-      <input id="label" placeholder="ชื่อ / คืออะไร (เช่น เช็คงานหน้าร้าน)" required>
-      <input id="url" type="url" placeholder="https://..." required>
-      <button type="submit">เพิ่มลิงก์</button>
-    </form>
-  </main>
+  <div class="container">
+    <!-- Header -->
+    <header>
+      <div class="brand">
+        <div class="brand-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+            <polyline points="2 17 12 22 22 17"></polyline>
+            <polyline points="2 12 12 17 22 12"></polyline>
+          </svg>
+        </div>
+        <div class="brand-info">
+          <h1>COMMAND DECK</h1>
+          <div class="status-badge">
+            <span class="status-dot"></span>
+            <span id="linkCount">CONNECTING...</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <button id="editToggleBtn" class="action-btn" title="เปิด/ปิด โหมดแก้ไข">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 20h9"></path>
+            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+          </svg>
+          <span id="editBtnText">แก้ไข</span>
+        </button>
+        <button id="openAddModalBtn" class="action-btn primary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="6" y1="12" x2="18" y2="12"></line>
+          </svg>
+          <span>เพิ่มระบบ</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Controls (Search & Filters) -->
+    <div class="controls-row">
+      <div class="search-box">
+        <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input type="text" id="searchInput" class="search-input" placeholder="ค้นหาระบบ / คำสั่งด่วน...">
+      </div>
+
+      <div id="filterPills" class="filter-pills">
+        <button class="pill active" data-filter="all">ทั้งหมด</button>
+      </div>
+    </div>
+
+    <!-- Dynamic Systems Grid -->
+    <div id="gridContainer"></div>
+  </div>
+
+  <!-- Add Link Modal -->
+  <div id="addModal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2>+ เพิ่มระบบใน Command Deck</h2>
+        <button id="closeModalBtn" class="close-btn">&times;</button>
+      </div>
+      <form id="addForm">
+        <div class="form-group">
+          <label for="project">โปรเจกต์ / หมวดหมู่</label>
+          <input id="project" class="form-control" list="projectOptions" placeholder="เช่น KMO, AI Tools, Personal" required>
+          <datalist id="projectOptions"></datalist>
+        </div>
+        <div class="form-group">
+          <label for="label">ชื่อระบบ / รายละเอียด</label>
+          <input id="label" class="form-control" placeholder="เช่น เช็คงานหน้าร้าน, ปิด AI ตอบแชท" required>
+        </div>
+        <div class="form-group">
+          <label for="url">URL ลิงก์ปลายทาง</label>
+          <input id="url" class="form-control" type="url" placeholder="https://..." required>
+        </div>
+        <div class="modal-footer">
+          <button type="button" id="cancelModalBtn" class="action-btn">ยกเลิก</button>
+          <button type="submit" id="saveLinkBtn" class="action-btn primary">บันทึกระบบ</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Message -->
+  <div id="toast" class="toast">บันทึกข้อมูลเรียบร้อย</div>
 
   <script>
     const SUPA_URL = 'https://ybyseaenceyswjnwdmdf.supabase.co';
     const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlieXNlYWVuY2V5c3dqbndkbWRmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3OTk3MTgsImV4cCI6MjA4OTM3NTcxOH0.NpaB7XrM0MzTknMvFLKkN57WG7_GkCb9zxZQUROz9Ug';
-    const UNCATEGORIZED = 'อื่นๆ';
+    const UNCATEGORIZED = 'ทั่วไป';
+
+    let allLinks = [];
+    let currentFilter = 'all';
+    let searchQuery = '';
+    let isEditMode = false;
+
+    // Smart SVG Icons and Color Themes based on system purpose
+    function getSystemMeta(label, url) {
+      const text = (label + ' ' + url).toLowerCase();
+      
+      // Shopee / Order -> Theme Orange
+      if (text.includes('order') || text.includes('ออเดอร์') || text.includes('shopee')) {
+        return {
+          theme: 'theme-orange',
+          icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>`
+        };
+      }
+      // LINE AI / Chatbot -> Theme Purple
+      if (text.includes('ai') || text.includes('line') || text.includes('reply') || text.includes('แชท')) {
+        return {
+          theme: 'theme-purple',
+          icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"></rect><circle cx="12" cy="5" r="2"></circle><path d="M12 7v4"></path><line x1="8" y1="16" x2="8.01" y2="16"></line><line x1="16" y1="16" x2="16.01" y2="16"></line></svg>`
+        };
+      }
+      // Booking / Queue -> Theme Green
+      if (text.includes('booking') || text.includes('จองคิว')) {
+        return {
+          theme: 'theme-green',
+          icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>`
+        };
+      }
+      // Storefront Dashboard -> Theme Cyan
+      if (text.includes('dashboard') || text.includes('เช็คงาน') || text.includes('หน้าร้าน')) {
+        return {
+          theme: 'theme-cyan',
+          icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>`
+        };
+      }
+      // Products / Inventory / Pricing -> Theme Gold
+      if (text.includes('product') || text.includes('สินค้า') || text.includes('ราคา')) {
+        return {
+          theme: 'theme-gold',
+          icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>`
+        };
+      }
+      // Billing / Invoices / Tools -> Theme Rose
+      if (text.includes('tool') || text.includes('เอกสาร') || text.includes('ใบเสร็จ') || text.includes('ใบเสนอราคา')) {
+        return {
+          theme: 'theme-rose',
+          icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>`
+        };
+      }
+      // Audit / Staff Log -> Theme Ruby
+      if (text.includes('audit') || text.includes('staff') || text.includes('ประวัติ')) {
+        return {
+          theme: 'theme-ruby',
+          icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>`
+        };
+      }
+      // Admin / Shop Config -> Theme Teal
+      if (text.includes('config') || text.includes('admin') || text.includes('จัดการ') || text.includes('ตั้งค่า')) {
+        return {
+          theme: 'theme-teal',
+          icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>`
+        };
+      }
+
+      // Default Cyan
+      return {
+        theme: 'theme-cyan',
+        icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>`
+      };
+    }
 
     async function supaFetch(path, options = {}) {
       const res = await fetch(`${SUPA_URL}/rest/v1/${path}`, {
@@ -166,103 +940,234 @@
     const addLink = (link) => supaFetch('links', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(link) });
     const deleteLink = (id) => supaFetch(`links?id=eq.${id}`, { method: 'DELETE', headers: { Prefer: 'return=minimal' } });
 
-    function updateProjectOptions(links) {
-      const projects = [...new Set(links.map((link) => link.project || UNCATEGORIZED))];
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    function updateFilters(links) {
+      const projects = [...new Set(links.map(l => l.project || UNCATEGORIZED))];
       const datalist = document.getElementById('projectOptions');
-      datalist.replaceChildren();
-      projects.forEach((project) => {
-        const option = document.createElement('option');
-        option.value = project;
-        datalist.appendChild(option);
+      datalist.innerHTML = '';
+      projects.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p;
+        datalist.appendChild(opt);
+      });
+
+      const pillsContainer = document.getElementById('filterPills');
+      pillsContainer.innerHTML = '';
+
+      const allPill = document.createElement('button');
+      allPill.className = `pill ${currentFilter === 'all' ? 'active' : ''}`;
+      allPill.textContent = `ทั้งหมด (${links.length})`;
+      allPill.addEventListener('click', () => {
+        currentFilter = 'all';
+        render();
+      });
+      pillsContainer.appendChild(allPill);
+
+      projects.forEach(p => {
+        const count = links.filter(l => (l.project || UNCATEGORIZED) === p).length;
+        const pill = document.createElement('button');
+        pill.className = `pill ${currentFilter === p ? 'active' : ''}`;
+        pill.textContent = `${p} (${count})`;
+        pill.addEventListener('click', () => {
+          currentFilter = p;
+          render();
+        });
+        pillsContainer.appendChild(pill);
       });
     }
 
-    async function render() {
-      const list = document.getElementById('list');
-      let links;
-      try {
-        links = await loadLinks();
-      } catch (error) {
-        list.replaceChildren();
-        const errEl = document.createElement('p');
-        errEl.className = 'empty';
-        errEl.textContent = `โหลดลิงก์ไม่สำเร็จ: ${error.message}`;
-        list.appendChild(errEl);
-        return;
-      }
+    function render() {
+      const container = document.getElementById('gridContainer');
+      const linkCountEl = document.getElementById('linkCount');
+      linkCountEl.textContent = `${allLinks.length} SYSTEMS ONLINE`;
 
-      list.replaceChildren();
-      updateProjectOptions(links);
-
-      if (links.length === 0) {
-        const empty = document.createElement('p');
-        empty.className = 'empty';
-        empty.textContent = 'ยังไม่มีลิงก์ เพิ่มด้านล่างได้เลย';
-        list.appendChild(empty);
-        return;
-      }
-
-      const groups = new Map();
-      links.forEach((link) => {
-        const project = link.project || UNCATEGORIZED;
-        if (!groups.has(project)) groups.set(project, []);
-        groups.get(project).push(link);
+      // Filter
+      let filtered = allLinks.filter(item => {
+        const matchesFilter = (currentFilter === 'all') || ((item.project || UNCATEGORIZED) === currentFilter);
+        const matchesSearch = !searchQuery || 
+          (item.label && item.label.toLowerCase().includes(searchQuery)) ||
+          (item.project && item.project.toLowerCase().includes(searchQuery)) ||
+          (item.url && item.url.toLowerCase().includes(searchQuery));
+        return matchesFilter && matchesSearch;
       });
 
-      for (const [project, groupLinks] of groups) {
-        const title = document.createElement('h2');
-        title.className = 'project-title';
-        title.textContent = project;
-        list.appendChild(title);
+      container.innerHTML = '';
 
-        groupLinks.forEach((link) => {
-          const card = document.createElement('div');
-          card.className = 'card';
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="state-box">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin: 0 auto; color: var(--muted); opacity: 0.5;">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <p>ไม่พบระบบที่ตรงกับคำค้นหา</p>
+          </div>
+        `;
+        return;
+      }
 
-          const a = document.createElement('a');
-          a.href = link.url;
-          a.target = '_blank';
-          a.rel = 'noopener';
-          a.textContent = link.label;
-          const small = document.createElement('small');
-          small.textContent = link.url;
-          a.appendChild(small);
+      // Group by Project
+      const groups = new Map();
+      filtered.forEach(link => {
+        const p = link.project || UNCATEGORIZED;
+        if (!groups.has(p)) groups.set(p, []);
+        groups.get(p).push(link);
+      });
 
-          const delBtn = document.createElement('button');
-          delBtn.className = 'del-btn';
-          delBtn.textContent = '✕';
-          delBtn.title = 'ลบลิงก์นี้';
-          delBtn.addEventListener('click', async () => {
+      for (const [project, links] of groups) {
+        const sectionTitle = document.createElement('div');
+        sectionTitle.className = 'section-title';
+        sectionTitle.textContent = `${project} (${links.length})`;
+        container.appendChild(sectionTitle);
+
+        const grid = document.createElement('div');
+        grid.className = 'bento-grid';
+
+        links.forEach(link => {
+          const meta = getSystemMeta(link.label, link.url);
+          const card = document.createElement('a');
+          card.className = `bento-card ${meta.theme}`;
+          card.href = isEditMode ? 'javascript:void(0)' : link.url;
+          if (!isEditMode) {
+            card.target = '_blank';
+            card.rel = 'noopener noreferrer';
+          }
+
+          // Clean url display
+          let displayUrl = link.url;
+          try {
+            const parsed = new URL(link.url);
+            displayUrl = parsed.hostname + (parsed.pathname !== '/' ? parsed.pathname : '');
+          } catch (e) {}
+
+          card.innerHTML = `
+            <button class="card-del-btn" title="ลบระบบนี้">&times;</button>
+            <div class="card-top">
+              <div class="card-icon-box">
+                ${meta.icon}
+              </div>
+              <div class="card-meta">
+                <span class="project-tag">${link.project || UNCATEGORIZED}</span>
+                <div class="launch-btn">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="7" y1="17" x2="17" y2="7"></line>
+                    <polyline points="7 7 17 7 17 17"></polyline>
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div class="card-content">
+              <div class="card-title">${link.label}</div>
+              <span class="card-url">${displayUrl}</span>
+            </div>
+          `;
+
+          // Handle Delete in Edit Mode
+          const delBtn = card.querySelector('.card-del-btn');
+          delBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const confirmed = confirm(`ยืนยันการลบระบบ "${link.label}" ออกจากพอร์ทัล?`);
+            if (!confirmed) return;
+
             delBtn.disabled = true;
-            await deleteLink(link.id);
-            render();
+            try {
+              await deleteLink(link.id);
+              allLinks = allLinks.filter(item => item.id !== link.id);
+              updateFilters(allLinks);
+              render();
+              showToast(`ลบ "${link.label}" สำเร็จ`);
+            } catch (err) {
+              alert('ลบไม่สำเร็จ: ' + err.message);
+            }
           });
 
-          card.append(a, delBtn);
-          list.appendChild(card);
+          grid.appendChild(card);
         });
+
+        container.appendChild(grid);
       }
     }
 
-    document.getElementById('addForm').addEventListener('submit', async (event) => {
-      event.preventDefault();
+    async function init() {
+      try {
+        allLinks = await loadLinks();
+        updateFilters(allLinks);
+        render();
+      } catch (err) {
+        document.getElementById('gridContainer').innerHTML = `
+          <div class="state-box" style="border-color: #ef4444; color: #fca5a5;">
+            <p>โหลดข้อมูลไม่สำเร็จ: ${err.message}</p>
+          </div>
+        `;
+      }
+    }
+
+    // Event Listeners
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+      searchQuery = e.target.value.trim().toLowerCase();
+      render();
+    });
+
+    const editBtn = document.getElementById('editToggleBtn');
+    editBtn.addEventListener('click', () => {
+      isEditMode = !isEditMode;
+      document.body.classList.toggle('edit-mode', isEditMode);
+      editBtn.classList.toggle('active', isEditMode);
+      document.getElementById('editBtnText').textContent = isEditMode ? 'เสร็จสิ้น' : 'แก้ไข';
+      render();
+    });
+
+    // Modal Events
+    const modal = document.getElementById('addModal');
+    const openModal = () => modal.classList.add('open');
+    const closeModal = () => {
+      modal.classList.remove('open');
+      document.getElementById('addForm').reset();
+    };
+
+    document.getElementById('openAddModalBtn').addEventListener('click', openModal);
+    document.getElementById('closeModalBtn').addEventListener('click', closeModal);
+    document.getElementById('cancelModalBtn').addEventListener('click', closeModal);
+
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) closeModal();
+    });
+
+    document.getElementById('addForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
       const project = document.getElementById('project').value.trim();
       const label = document.getElementById('label').value.trim();
       const url = document.getElementById('url').value.trim();
       if (!project || !label || !url) return;
 
-      const submitBtn = event.target.querySelector('button[type="submit"]');
-      submitBtn.disabled = true;
+      const saveBtn = document.getElementById('saveLinkBtn');
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'กำลังบันทึก...';
+
       try {
         await addLink({ project, label, url });
-        event.target.reset();
-        await render();
+        closeModal();
+        showToast(`เพิ่ม "${label}" เรียบร้อยแล้ว`);
+        allLinks = await loadLinks();
+        updateFilters(allLinks);
+        render();
+      } catch (err) {
+        alert('เพิ่มลิงก์ไม่สำเร็จ: ' + err.message);
       } finally {
-        submitBtn.disabled = false;
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'บันทึกระบบ';
       }
     });
 
-    render();
+    init();
   </script>
 </body>
 </html>
